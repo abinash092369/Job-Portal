@@ -1,0 +1,784 @@
+{
+  "info": {
+    "_postman_id": "fa10d0e0-6f81-4599-9bf6-5d78769335b6",
+    "name": "Job Portal API",
+    "description": "Comprehensive Postman collection covering all modules of the Job Board Backend: Auth, Profiles, Jobs, Search, Applications, Dashboards, Notifications, and Admin controls.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "System & Health",
+      "item": [
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@example.com\",\n  \"password\": \"Password123!\",\n  \"role\": \"candidate\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email?token=insert-email-token-here",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify-email"],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "insert-email-token-here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@example.com\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Access Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"insert-refresh-token-here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh-token"]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password Request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "Reset Password Submit",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"insert-reset-token-here\",\n  \"password\": \"NewSecurePassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "reset-password"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User Details (Me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        },
+        {
+          "name": "Logout User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"insert-refresh-token-here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile Management",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile"]
+            }
+          }
+        },
+        {
+          "name": "Update Candidate Profile",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"headline\": \"Senior Node.js Engineer\",\n  \"skills\": [\"TypeScript\", \"Node.js\", \"Express\", \"PostgreSQL\"],\n  \"experience\": [\n    {\n      \"company\": \"Tech Solutions Inc\",\n      \"role\": \"Software Developer\",\n      \"duration\": \"2 years\"\n    }\n  ],\n  \"education\": [\n    {\n      \"institution\": \"State University\",\n      \"degree\": \"BS Computer Science\",\n      \"year\": \"2024\"\n    }\n  ],\n  \"location\": \"San Francisco, CA\",\n  \"phone\": \"+1-555-0199\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/candidate",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile", "candidate"]
+            }
+          }
+        },
+        {
+          "name": "Update Employer Profile",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Acme Corporation\",\n  \"description\": \"Building the future of software widgets.\",\n  \"website\": \"https://acme-widgets.com\",\n  \"industry\": \"Technology\",\n  \"companySize\": \"51-200\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/employer",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile", "employer"]
+            }
+          }
+        },
+        {
+          "name": "Upload Resume (Candidate)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "resume",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile", "resume"]
+            }
+          }
+        },
+        {
+          "name": "Upload Photo (Candidate)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/photo",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile", "photo"]
+            }
+          }
+        },
+        {
+          "name": "Upload Logo (Employer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "logo",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/profile/logo",
+              "host": ["{{baseUrl}}"],
+              "path": ["profile", "logo"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Job Postings",
+      "item": [
+        {
+          "name": "Public Search Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs?page=1&limit=10&sort=newest&search=Node&location=Remote&jobType=full-time&remote=true&skills=TypeScript,Node.js",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "sort", "value": "newest" },
+                { "key": "search", "value": "Node" },
+                { "key": "location", "value": "Remote" },
+                { "key": "jobType", "value": "full-time" },
+                { "key": "remote", "value": "true" },
+                { "key": "skills", "value": "TypeScript,Node.js" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Employer Job Postings (My Jobs)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/my-jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "my-jobs"]
+            }
+          }
+        },
+        {
+          "name": "Get Saved / Bookmarked Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/saved",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "saved"]
+            }
+          }
+        },
+        {
+          "name": "Get Job Details by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/insert-job-id-here",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "insert-job-id-here"]
+            }
+          }
+        },
+        {
+          "name": "Create Job Posting (Employer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Backend Engineer (Node.js)\",\n  \"description\": \"Design and implement robust SaaS backend APIs.\",\n  \"responsibilities\": \"Write clean TypeScript code, configure databases, write tests.\",\n  \"requirements\": \"5+ years backend dev experience with Node.js and SQL.\",\n  \"skills\": [\"TypeScript\", \"Node.js\", \"SQL\", \"Express\"],\n  \"salaryRange\": \"$130k - $160k\",\n  \"jobType\": \"full-time\",\n  \"location\": \"San Francisco or Remote\",\n  \"experienceLevel\": \"Senior\",\n  \"applicationDeadline\": \"2026-12-31T23:59:59.000Z\",\n  \"status\": \"draft\",\n  \"screeningQuestions\": [\n    \"What is your experience level with TypeScript?\",\n    \"Explain how you optimize SQL queries.\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs"]
+            }
+          }
+        },
+        {
+          "name": "Update Job Posting (Employer)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Principal Backend Engineer (Node.js & TS)\",\n  \"description\": \"Lead architecting backend services.\",\n  \"salaryRange\": \"$150k - $180k\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs/insert-job-id-here",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "insert-job-id-here"]
+            }
+          }
+        },
+        {
+          "name": "Publish Job Posting (Employer)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/insert-job-id-here/publish",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "insert-job-id-here", "publish"]
+            }
+          }
+        },
+        {
+          "name": "Unpublish Job Posting (Employer)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/insert-job-id-here/unpublish",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "insert-job-id-here", "unpublish"]
+            }
+          }
+        },
+        {
+          "name": "Delete Job Posting (Employer)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/insert-job-id-here",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "insert-job-id-here"]
+            }
+          }
+        },
+        {
+          "name": "Run Auto Expiration Scan",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/expire-check",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "expire-check"]
+            }
+          }
+        },
+        {
+          "name": "Bookmark / Save Job (Candidate)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/insert-job-id-here/save",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "insert-job-id-here", "save"]
+            }
+          }
+        },
+        {
+          "name": "Remove Bookmark / Unsave Job (Candidate)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/insert-job-id-here/unsave",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "insert-job-id-here", "unsave"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "Submit Job Application (Candidate)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "coverLetter",
+                  "value": "I am thrilled to submit my details for this role.",
+                  "type": "text"
+                },
+                {
+                  "key": "screeningAnswers",
+                  "value": "[\"5 years of experience with TypeScript.\", \"By analyzing indexes and runtimes.\"]",
+                  "type": "text"
+                },
+                {
+                  "key": "resume",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/jobs/insert-job-id-here/apply",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "insert-job-id-here", "apply"]
+            }
+          }
+        },
+        {
+          "name": "Get Applications for Job (Employer)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/insert-job-id-here/applications?status=applied",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "insert-job-id-here", "applications"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "applied"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Application Status (Employer)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"interview\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/applications/insert-application-id-here/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "insert-application-id-here", "status"]
+            }
+          }
+        },
+        {
+          "name": "Add Private Feedback Note (Employer)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Great technical background, excellent communication skills.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/applications/insert-application-id-here/notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["applications", "insert-application-id-here", "notes"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboards",
+      "item": [
+        {
+          "name": "Get Employer Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/employer",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "employer"]
+            }
+          }
+        },
+        {
+          "name": "Get Candidate Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/candidate",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "candidate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get User Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications"]
+            }
+          }
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "read-all"]
+            }
+          }
+        },
+        {
+          "name": "Mark Single Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/insert-notification-id-here/read",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "insert-notification-id-here", "read"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Platform Administration",
+      "item": [
+        {
+          "name": "List Platform Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"]
+            }
+          }
+        },
+        {
+          "name": "Toggle User Suspension",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isSuspended\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/insert-user-id-here/suspend",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "insert-user-id-here", "suspend"]
+            }
+          }
+        },
+        {
+          "name": "Toggle Employer Verification",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isVerified\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/employers/insert-employer-id-here/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "employers", "insert-employer-id-here", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Moderate Job Posting Status",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/jobs/insert-job-id-here/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "jobs", "insert-job-id-here", "status"]
+            }
+          }
+        },
+        {
+          "name": "Moderate Job Deletion",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/jobs/insert-job-id-here",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "jobs", "insert-job-id-here"]
+            }
+          }
+        },
+        {
+          "name": "Get Platform Metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "stats"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

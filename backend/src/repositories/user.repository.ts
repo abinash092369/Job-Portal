@@ -1,0 +1,11 @@
+import { User } from '../types/auth';
+
+export interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  findByVerificationToken(token: string): Promise<User | null>;
+  findByResetToken(token: string): Promise<User | null>;
+  create(user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User>;
+  update(id: string, updates: Partial<Omit<User, 'id' | 'createdAt' | 'updatedAt'>>): Promise<User | null>;
+  findAll(): Promise<User[]>;
+}
