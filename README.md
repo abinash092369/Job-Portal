@@ -100,3 +100,17 @@ A full-stack workflow is configured in [.github/workflows/ci.yml](file:///.githu
 - Installs dependencies using safe caching and legacy-peer-deps fallbacks.
 - Runs backend test suites with coverage reports.
 - Runs frontend Vitest suites to ensure component regression safety.
+
+---
+
+## 🛠️ Fixes
+
+We have resolved three known database/typing issues in the backend from the Phase 2 database implementations:
+
+1. **Cloudinary URL Construction**:
+   - **Change**: Updated controllers (`profile.controller.ts`, `application.controller.ts`) to check if uploaded files are already full URLs (e.g., beginning with `http://` or `https://` from Cloudinary storage) before wrapping them with a relative folder prefix. Removed the temporary regex-cleaning helper `cleanCloudinaryUrl` in the repository layer to clean URLs at their source.
+2. **Orphaned Bookmarks on Job Deletion**:
+   - **Change**: Added cascade deletes in the job repository (`job.repository.impl.ts`) to clean up `Bookmark` documents whenever a job posting is permanently removed. Furthermore, updated the `getSavedJobs` endpoint to safely handle and skip any pre-existing legacy orphaned bookmarks.
+3. **Structured Candidate Profile Types**:
+   - **Change**: Replaced loose `any[]` properties in the candidate profile schema (`profile.model.ts`) with dedicated embedded Mongoose schemas (`IExperienceEntry` and `IEducationEntry`) without `_id` nesting. Updated the Zod schemas in `profile.validation.ts` to strictly validate write payloads.
+

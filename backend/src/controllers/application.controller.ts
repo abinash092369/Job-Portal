@@ -15,8 +15,11 @@ export async function applyToJob(req: Request, res: Response, next: NextFunction
     
     // Check if a new resume was uploaded via multer
     const uploadedResumeUrl = req.file 
-      ? `/uploads/resumes/${req.file.filename}` 
+      ? (req.file.filename.startsWith('http://') || req.file.filename.startsWith('https://')
+          ? req.file.filename
+          : `/uploads/resumes/${req.file.filename}`)
       : undefined;
+
 
     const application = await applicationService.applyToJob(
       candidateId,

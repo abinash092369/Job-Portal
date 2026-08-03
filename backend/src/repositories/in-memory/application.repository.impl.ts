@@ -5,14 +5,6 @@ import { UserModel } from '../../models/user.model';
 import { CandidateProfileModel } from '../../models/profile.model';
 import mongoose from 'mongoose';
 
-/**
- * Extracts pure URL from paths wrapped by controllers (e.g. /uploads/resumes/https://...)
- */
-function cleanCloudinaryUrl(url?: string): string | undefined {
-  if (!url) return url;
-  const match = url.match(/https?:\/\/res\.cloudinary\.com\/[^\s]+/);
-  return match ? match[0] : url;
-}
 
 function mapApplication(doc: IApplicationDocument): Application {
   return {
@@ -86,11 +78,8 @@ export class MongooseApplicationRepository implements ApplicationRepository {
   }
 
   async create(applicationData: Omit<Application, 'id' | 'createdAt' | 'updatedAt'>): Promise<Application> {
-    const cleanedResumeUrl = cleanCloudinaryUrl(applicationData.resumeUrl) || applicationData.resumeUrl;
-
     const app = new ApplicationModel({
       ...applicationData,
-      resumeUrl: cleanedResumeUrl,
       statusHistory: [
         {
           status: applicationData.status || 'applied',
@@ -103,6 +92,7 @@ export class MongooseApplicationRepository implements ApplicationRepository {
     return enrichApplication(mapApplication(app));
   }
 
+
   async update(
     id: string,
     updates: Partial<Omit<Application, 'id' | 'createdAt' | 'updatedAt'>>
@@ -113,9 +103,7 @@ export class MongooseApplicationRepository implements ApplicationRepository {
     if (!currentApp) return null;
 
     const finalUpdates: any = { ...updates };
-    if (updates.resumeUrl) {
-      finalUpdates.resumeUrl = cleanCloudinaryUrl(updates.resumeUrl);
-    }
+
 
     const updateQuery: any = { $set: finalUpdates };
 

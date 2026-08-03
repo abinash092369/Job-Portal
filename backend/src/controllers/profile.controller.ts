@@ -90,8 +90,10 @@ export async function uploadResume(req: Request, res: Response, next: NextFuncti
     // Delete old resume file
     deleteOldFile(profile.resumeUrl);
 
-    // Save relative URL path with forward slashes
-    const relativeUrl = `/uploads/resumes/${req.file.filename}`;
+    // Save URL path (use directly if Cloudinary URL)
+    const relativeUrl = req.file.filename.startsWith('http://') || req.file.filename.startsWith('https://')
+      ? req.file.filename
+      : `/uploads/resumes/${req.file.filename}`;
     const updatedProfile = await profileRepository.updateCandidateProfile(userId, {
       resumeUrl: relativeUrl,
     });
@@ -121,7 +123,9 @@ export async function uploadPhoto(req: Request, res: Response, next: NextFunctio
     // Delete old profile photo
     deleteOldFile(profile.profilePhotoUrl);
 
-    const relativeUrl = `/uploads/photos/${req.file.filename}`;
+    const relativeUrl = req.file.filename.startsWith('http://') || req.file.filename.startsWith('https://')
+      ? req.file.filename
+      : `/uploads/photos/${req.file.filename}`;
     const updatedProfile = await profileRepository.updateCandidateProfile(userId, {
       profilePhotoUrl: relativeUrl,
     });
@@ -151,10 +155,13 @@ export async function uploadLogo(req: Request, res: Response, next: NextFunction
     // Delete old logo file
     deleteOldFile(profile.logoUrl);
 
-    const relativeUrl = `/uploads/logos/${req.file.filename}`;
+    const relativeUrl = req.file.filename.startsWith('http://') || req.file.filename.startsWith('https://')
+      ? req.file.filename
+      : `/uploads/logos/${req.file.filename}`;
     const updatedProfile = await profileRepository.updateEmployerProfile(userId, {
       logoUrl: relativeUrl,
     });
+
 
     res.status(200).json(formatResponse(true, updatedProfile, 'Company logo uploaded successfully'));
   } catch (error) {

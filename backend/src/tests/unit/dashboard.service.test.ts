@@ -60,12 +60,13 @@ describe('DashboardService - Profile Completeness', () => {
       name: 'Jane Developer',
       headline: 'React Senior Architect',
       skills: ['TypeScript', 'Jest'],
-      experience: [{ company: 'Microsoft', role: 'Staff dev', duration: '2 yrs' }],
-      education: [{ school: 'Stanford', degree: 'BS', fieldOfStudy: 'CS', year: 2024 }],
+      experience: [{ title: 'Staff dev', company: 'Microsoft', location: 'Redmond', startDate: new Date('2022-01-01'), description: '2 yrs' }],
+      education: [{ institution: 'Stanford', degree: 'BS', fieldOfStudy: 'CS', startDate: new Date('2020-01-01'), endDate: new Date('2024-01-01'), description: '2024' }],
       resumeUrl: 'https://cloudinary.com/my_validated_resume.pdf',
       location: 'New York, USA',
       phone: '+1 555-987-6543',
     });
+
 
     dashboard = await dashboardService.getCandidateDashboard(candidateId);
     expect(dashboard.profileCompleteness).toBe(100);

@@ -3,7 +3,9 @@ import { JobRepository } from '../job.repository';
 import { JobModel, IJobDocument } from '../../models/job.model';
 import { ApplicationModel } from '../../models/application.model';
 import { EmployerProfileModel } from '../../models/profile.model';
+import { BookmarkModel } from '../../models/bookmark.model';
 import mongoose from 'mongoose';
+
 
 /**
  * Parses salary range string like "$80k - $120k" or "$80,000 - $120,000" into numeric min and max values.
@@ -246,12 +248,14 @@ export class MongooseJobRepository implements JobRepository {
     const deleted = (result.deletedCount || 0) > 0;
     
     if (deleted) {
-      // Cascade delete applications for this job posting
+      // Cascade delete applications and bookmarks for this job posting
       await ApplicationModel.deleteMany({ jobId: id });
+      await BookmarkModel.deleteMany({ jobId: id });
     }
 
     return deleted;
   }
+
 
   async findAll(): Promise<Job[]> {
     const jobs = await JobModel.find().sort({ createdAt: -1 });

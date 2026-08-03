@@ -1,5 +1,12 @@
+// Clear Cloudinary variables for testing to force fallback to local mock storage
+process.env.CLOUDINARY_CLOUD_NAME = '';
+process.env.CLOUDINARY_API_KEY = '';
+process.env.CLOUDINARY_API_SECRET = '';
+
 import { MongoMemoryServer } from 'mongodb-memory-server';
+
 import mongoose from 'mongoose';
+
 
 // Mock Nodemailer globally to avoid network dependencies or dynamic Ethereal setup delays
 jest.mock('nodemailer', () => ({

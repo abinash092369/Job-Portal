@@ -9,14 +9,6 @@ import {
 } from '../../models/profile.model';
 import mongoose from 'mongoose';
 
-/**
- * Extracts pure URL from paths wrapped by controllers (e.g. /uploads/resumes/https://...)
- */
-function cleanCloudinaryUrl(url?: string): string | undefined {
-  if (!url) return url;
-  const match = url.match(/https?:\/\/res\.cloudinary\.com\/[^\s]+/);
-  return match ? match[0] : url;
-}
 
 function mapCandidateProfile(doc: ICandidateProfileDocument): CandidateProfile {
   return {
@@ -118,12 +110,7 @@ export class MongooseProfileRepository implements ProfileRepository {
 
     // Clean Cloudinary URLs if wrapped
     const cleanedUpdates = { ...updates };
-    if (cleanedUpdates.resumeUrl) {
-      cleanedUpdates.resumeUrl = cleanCloudinaryUrl(cleanedUpdates.resumeUrl);
-    }
-    if (cleanedUpdates.profilePhotoUrl) {
-      cleanedUpdates.profilePhotoUrl = cleanCloudinaryUrl(cleanedUpdates.profilePhotoUrl);
-    }
+
 
     const profileDoc = await CandidateProfileModel.findOneAndUpdate(
       { userId },
@@ -157,9 +144,7 @@ export class MongooseProfileRepository implements ProfileRepository {
 
     // Clean Cloudinary URLs if wrapped
     const cleanedUpdates = { ...updates };
-    if (cleanedUpdates.logoUrl) {
-      cleanedUpdates.logoUrl = cleanCloudinaryUrl(cleanedUpdates.logoUrl);
-    }
+
 
     const profileDoc = await EmployerProfileModel.findOneAndUpdate(
       { userId },

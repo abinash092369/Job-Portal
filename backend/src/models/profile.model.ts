@@ -1,13 +1,31 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IExperienceEntry {
+  title: string;
+  company: string;
+  location?: string;
+  startDate: Date;
+  endDate?: Date | null;
+  description?: string;
+}
+
+export interface IEducationEntry {
+  institution: string;
+  degree: string;
+  fieldOfStudy: string;
+  startDate: Date;
+  endDate?: Date | null;
+  description?: string;
+}
+
 // Candidate Profile Schema
 export interface ICandidateProfileDocument extends Document {
   userId: mongoose.Types.ObjectId;
   name: string;
   headline?: string;
   skills: string[];
-  experience: any[];
-  education: any[];
+  experience: IExperienceEntry[];
+  education: IEducationEntry[];
   resumeUrl?: string;
   profilePhotoUrl?: string;
   location?: string;
@@ -15,6 +33,30 @@ export interface ICandidateProfileDocument extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const ExperienceEntrySchema = new Schema<IExperienceEntry>(
+  {
+    title: { type: String, required: true, trim: true },
+    company: { type: String, required: true, trim: true },
+    location: { type: String, default: '' },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, default: null },
+    description: { type: String, default: '' },
+  },
+  { _id: false }
+);
+
+const EducationEntrySchema = new Schema<IEducationEntry>(
+  {
+    institution: { type: String, required: true, trim: true },
+    degree: { type: String, required: true, trim: true },
+    fieldOfStudy: { type: String, required: true, trim: true },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, default: null },
+    description: { type: String, default: '' },
+  },
+  { _id: false }
+);
 
 const CandidateProfileSchema = new Schema<ICandidateProfileDocument>(
   {
@@ -39,13 +81,13 @@ const CandidateProfileSchema = new Schema<ICandidateProfileDocument>(
       default: [],
     },
     experience: {
-      type: [Schema.Types.Mixed],
+      type: [ExperienceEntrySchema],
       default: [],
-    } as any,
+    },
     education: {
-      type: [Schema.Types.Mixed],
+      type: [EducationEntrySchema],
       default: [],
-    } as any,
+    },
     resumeUrl: {
       type: String,
       default: '',
@@ -72,6 +114,7 @@ export const CandidateProfileModel = mongoose.model<ICandidateProfileDocument>(
   'CandidateProfile',
   CandidateProfileSchema
 );
+
 
 // Employer Profile Schema
 export interface IEmployerProfileDocument extends Document {
