@@ -17,7 +17,9 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional().default(''),
   SMTP_FROM: z.string().default('Job Portal <noreply@jobportal.com>'),
   FRONTEND_URL: z.string().url().default('http://localhost:3000'),
-  MONGODB_URI: z.string().url().default('mongodb://localhost:27017/jobportal'),
+  MONGODB_URI: z.string().refine(val => val.startsWith('mongodb://') || val.startsWith('mongodb+srv://'), {
+    message: 'Invalid MongoDB connection URI',
+  }).default('mongodb://localhost:27017/jobportal'),
   CLOUDINARY_CLOUD_NAME: z.string().optional().default(''),
   CLOUDINARY_API_KEY: z.string().optional().default(''),
   CLOUDINARY_API_SECRET: z.string().optional().default(''),
