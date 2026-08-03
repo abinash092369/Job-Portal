@@ -64,6 +64,20 @@ describe('Validation Schemas Unit Tests', () => {
       const parsed = registerSchema.safeParse(invalid as any);
       expect(parsed.success).toBe(false);
     });
+
+    test('fails with password too short', () => {
+      const invalid = {
+        email: 'test@example.com',
+        password: 'short',
+        confirmPassword: 'short',
+        role: 'candidate',
+      };
+      const parsed = registerSchema.safeParse(invalid);
+      expect(parsed.success).toBe(false);
+      if (!parsed.success) {
+        expect(parsed.error.issues[0].message).toContain('Password must be at least 8 characters');
+      }
+    });
   });
 
   describe('jobSchema', () => {
