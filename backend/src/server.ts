@@ -15,7 +15,7 @@ async function startServer() {
 
   // Graceful error termination procedures
   process.on('unhandledRejection', (err: Error) => {
-    logger.error(`Unhandled Promise Rejection: ${err.message}`);
+    logger.error(`Unhandled Promise Rejection: ${err.stack || err.message}`);
     logger.error('Shutting down server...');
     server.close(() => {
       process.exit(1);
@@ -23,7 +23,7 @@ async function startServer() {
   });
 
   process.on('uncaughtException', (err: Error) => {
-    logger.error(`Uncaught Exception: ${err.message}`);
+    logger.error(`Uncaught Exception: ${err.stack || err.message}`);
     logger.error('Shutting down server...');
     server.close(() => {
       process.exit(1);

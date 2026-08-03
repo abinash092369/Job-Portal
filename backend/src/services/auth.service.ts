@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { userRepository } from '../repositories/in-memory/user.repository.impl';
 import { refreshTokenRepository } from '../repositories/in-memory/refresh-token.repository.impl';
 import { emailService } from './email.service';

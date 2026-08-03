@@ -41,7 +41,7 @@ export async function connectDatabase(): Promise<void> {
       logger.info('📡 Successfully connected to MongoDB');
       return;
     } catch (error: any) {
-      logger.error(`❌ Failed to connect to MongoDB on attempt ${attempt}: ${error.message}`);
+      logger.error(`❌ Failed to connect to MongoDB on attempt ${attempt}: ${error.stack || error.message}`);
       attempt++;
       if (attempt <= MAX_RETRIES) {
         logger.info(`Retrying database connection in ${RETRY_INTERVAL_MS / 1000}s...`);
