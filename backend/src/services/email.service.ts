@@ -76,6 +76,7 @@ class EmailService {
 
   async sendVerificationEmail(to: string, token: string): Promise<void> {
     const verificationLink = `${env.FRONTEND_URL}/verify-email?token=${token}`;
+    logger.info(`✉️  [Dev Helper] Verification Link for ${to}: ${verificationLink}`);
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
         <h2 style="color: #1a202c; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Welcome to Job Portal!</h2>
@@ -94,6 +95,7 @@ class EmailService {
 
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
     const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
+    logger.info(`✉️  [Dev Helper] Password Reset Link for ${to}: ${resetLink}`);
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
         <h2 style="color: #1a202c; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Password Reset Request</h2>
@@ -108,6 +110,7 @@ class EmailService {
       </div>
     `;
     await this.sendEmail(to, 'Reset Your Password', html);
+
   }
 
   async sendApplicationStatusUpdate(to: string, jobTitle: string, status: string, candidateName: string = 'Candidate'): Promise<void> {
