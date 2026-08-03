@@ -37,3 +37,6 @@ yarn-error.log*
 # Uploads
 backend/uploads/*
 !backend/uploads/.gitkeep
+
+# Local Netlify folder
+.netlify
