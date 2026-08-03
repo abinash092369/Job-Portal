@@ -117,8 +117,8 @@ class JobService {
               );
               logger.info(`Triggered expiring soon notification for Job ID: ${job.id}`);
             }
-          } catch (err) {
-            logger.error(`Failed to trigger job expiring soon notification for job ${job.id}:`, err);
+          } catch (err: any) {
+            logger.error(`Failed to trigger job expiring soon notification for job ${job.id}: ${err.stack || err}`);
           }
         }
       }

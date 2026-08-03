@@ -99,7 +99,7 @@ export function uploadMiddleware(fieldName: string) {
             },
             (error, result) => {
               if (error) {
-                logger.error(`Cloudinary Upload Error: ${error.message}`);
+                logger.error(`Cloudinary Upload Error: ${error.stack || error.message}`);
                 return next(new BadRequestError(`Cloudinary upload failed: ${error.message}`));
               }
               if (result) {
@@ -117,7 +117,7 @@ export function uploadMiddleware(fieldName: string) {
           );
           uploadStream.end(req.file.buffer);
         } catch (uploadErr: any) {
-          logger.error(`Failed during upload streaming: ${uploadErr.message}`);
+          logger.error(`Failed during upload streaming: ${uploadErr.stack || uploadErr.message}`);
           return next(new BadRequestError(`Cloudinary upload error: ${uploadErr.message}`));
         }
       } else {
@@ -149,7 +149,7 @@ export function uploadMiddleware(fieldName: string) {
 
           next();
         } catch (writeErr: any) {
-          logger.error(`Local file fallback write failed: ${writeErr.message}`);
+          logger.error(`Local file fallback write failed: ${writeErr.stack || writeErr.message}`);
           return next(new BadRequestError(`Local file write failed: ${writeErr.message}`));
         }
       }

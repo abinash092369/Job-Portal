@@ -26,8 +26,8 @@ class EmailService {
         });
         logger.info(`Dynamic Ethereal SMTP established. User: ${testAccount.user}`);
         return this.transporter;
-      } catch (err) {
-        logger.error('Failed to establish dynamic Ethereal SMTP, creating dummy offline transport...', err);
+      } catch (err: any) {
+        logger.error(`Failed to establish dynamic Ethereal SMTP, creating dummy offline transport... Stack: ${err.stack || err}`);
         // Fallback dummy transport to avoid crashing
         this.transporter = nodemailer.createTransport({
           jsonTransport: true
@@ -66,8 +66,8 @@ class EmailService {
       if (previewUrl) {
         logger.info(`✉️ [Mock Email] Preview URL: ${previewUrl}`);
       }
-    } catch (error) {
-      logger.error(`Error encountered while sending email to ${to}:`, error);
+    } catch (error: any) {
+      logger.error(`Error encountered while sending email to ${to}: ${error.stack || error}`);
       if (env.NODE_ENV === 'production') {
         throw error;
       }

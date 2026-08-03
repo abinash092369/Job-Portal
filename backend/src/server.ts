@@ -4,6 +4,11 @@ import { logger } from './utils/logger';
 import { connectDatabase } from './config/database';
 
 async function startServer() {
+  // Print runtime values for diagnosis
+  console.log("Node Version:", process.version);
+  console.log("Platform:", process.platform);
+  console.log("globalThis.crypto:", globalThis.crypto);
+
   // 1. Establish Database Connection
   await connectDatabase();
 

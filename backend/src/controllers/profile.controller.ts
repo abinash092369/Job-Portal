@@ -15,7 +15,7 @@ function deleteOldFile(fileUrl?: string) {
     if (fs.existsSync(absolutePath)) {
       fs.unlink(absolutePath, (err) => {
         if (err) {
-          logger.error(`Failed to delete old file at ${absolutePath}: ${err.message}`);
+          logger.error(`Failed to delete old file at ${absolutePath}: ${err.stack || err.message}`);
         } else {
           logger.info(`Successfully deleted old file at ${absolutePath}`);
         }
