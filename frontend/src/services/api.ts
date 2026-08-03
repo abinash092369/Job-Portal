@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuthStore } from '../context/authStore';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1',
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true, // Sends HTTP-only refresh cookies automatically
 });
 
@@ -59,7 +59,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+        const API_URL = import.meta.env.VITE_API_URL;
         
         // Request token refresh using a separate clean axios call to prevent loop
         const refreshResponse = await axios.post(

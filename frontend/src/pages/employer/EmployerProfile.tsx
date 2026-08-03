@@ -111,7 +111,8 @@ export const EmployerProfilePage: React.FC = () => {
     );
   }
 
-  const staticApiUrl = 'http://localhost:5000'; // Prefix relative uploads URLs
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+  const staticApiUrl = apiBaseUrl.replace('/api/v1', ''); // Prefix relative uploads URLs
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8 bg-background min-h-screen space-y-8 animate-fade-in">

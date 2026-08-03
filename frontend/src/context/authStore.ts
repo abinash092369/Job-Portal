@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { User } from '../types';
-import axios from 'axios';
+import api from '../services/api';
 
 interface AuthState {
   user: User | null;
@@ -12,8 +12,6 @@ interface AuthState {
   logoutUser: () => void;
   checkAuth: () => Promise<void>;
 }
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -31,8 +29,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Clear local state first
     set({ user: null, accessToken: null, isLoading: false });
     try {
-      // Notify backend to clear cookies
-      await axios.post(`${API_URL}/auth/logout`, {}, { withCredentials: true });
+      // Notify backend to clear cookies using shared api client
+      await api.post('/auth/logout');
     } catch (err) {
       console.error('Failed to logout on server:', err);
     }
@@ -41,17 +39,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   checkAuth: async () => {
     set({ isLoading: true });
     try {
-      // 1. Attempt to refresh token first to see if a valid refresh cookie exists
-      const refreshResponse = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
-      const newAccessToken = refreshResponse.data.data.accessToken;
-      
-      // 2. Fetch authenticated user details with the refreshed access token
-      const meResponse = await axios.get(`${API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${newAccessToken}` },
-      });
-      
+      // By requesting '/auth/me' through the shared api client, any missing/expired token
+      // will be automatically refreshed using cookies by the Axios response interceptor.
+      const meResponse = await api.get('/auth/me');
       const user = meResponse.data.data;
-      set({ user, accessToken: newAccessToken, isLoading: false });
+      const token = useAuthStore.getState().accessToken;
+      set({ user, accessToken: token, isLoading: false });
     } catch (error) {
       // No active session or refresh token expired
       set({ user: null, accessToken: null, isLoading: false });

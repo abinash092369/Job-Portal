@@ -106,7 +106,8 @@ export const ApplicantTracking: React.FC = () => {
     return map;
   }, [applications]);
 
-  const staticApiUrl = 'http://localhost:5000';
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+  const staticApiUrl = apiBaseUrl.replace('/api/v1', '');
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 bg-background min-h-screen space-y-6 animate-fade-in">
