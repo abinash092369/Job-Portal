@@ -12,6 +12,10 @@ const swaggerDocument = {
   },
   servers: [
     {
+      url: 'https://job-portal-production-d544.up.railway.app/api/v1',
+      description: 'Production server',
+    },
+    {
       url: 'http://localhost:5000/api/v1',
       description: 'Local development server',
     },

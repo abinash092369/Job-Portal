@@ -7,6 +7,7 @@ import api from '../../services/api';
 import type { CandidateProfile } from '../../types';
 import { useToastStore } from '../../context/toastStore';
 import { Loader2, Save, FileText, Plus, Trash2, Camera, Download, UploadCloud } from 'lucide-react';
+import { getMediaUrl } from '../../utils/url';
 
 const profileSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -199,8 +200,6 @@ export const CandidateProfilePage: React.FC = () => {
     );
   }
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
-  const staticApiUrl = apiBaseUrl.replace('/api/v1', ''); // Prefix relative uploads URLs
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8 bg-background min-h-screen space-y-8 animate-fade-in">
@@ -223,7 +222,7 @@ export const CandidateProfilePage: React.FC = () => {
             <div className="relative inline-block mx-auto">
               {profile?.profilePhotoUrl ? (
                 <img
-                  src={profile.profilePhotoUrl.startsWith('http') ? profile.profilePhotoUrl : `${staticApiUrl}${profile.profilePhotoUrl}`}
+                  src={getMediaUrl(profile.profilePhotoUrl)}
                   alt="Profile photo"
                   className="w-24 h-24 rounded-full object-cover border-2 border-slate-100 shadow-sm"
                 />
@@ -284,7 +283,7 @@ export const CandidateProfilePage: React.FC = () => {
                 <div className="min-w-0 flex-1">
                   <span className="text-[10px] font-bold text-slate-700 truncate block">My Resume</span>
                   <a
-                    href={profile.resumeUrl.startsWith('http') ? profile.resumeUrl : `${staticApiUrl}${profile.resumeUrl}`}
+                    href={getMediaUrl(profile.resumeUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[9px] font-semibold text-primary hover:underline flex items-center gap-0.5 mt-0.5"

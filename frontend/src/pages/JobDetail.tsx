@@ -7,6 +7,7 @@ import { useAuthStore } from '../context/authStore';
 import { useToastStore } from '../context/toastStore';
 import { Calendar, MapPin, DollarSign, Briefcase, Eye, Bookmark, Share2, ShieldCheck, ArrowLeft, Loader2, FileText, CheckCircle2, ChevronRight, X } from 'lucide-react';
 import { JobDetailSkeleton } from '../components/Skeletons';
+import { getMediaUrl } from '../utils/url';
 
 export const JobDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -215,7 +216,7 @@ export const JobDetail: React.FC = () => {
               <div className="flex items-start gap-4">
                 {job.logoUrl ? (
                   <img
-                    src={job.logoUrl}
+                    src={getMediaUrl(job.logoUrl)}
                     alt={job.companyName || 'Company logo'}
                     className="w-16 h-16 rounded-2xl object-contain border border-slate-100 bg-slate-50 shrink-0"
                   />
@@ -356,7 +357,7 @@ export const JobDetail: React.FC = () => {
             <div className="flex items-center gap-3">
               {job.logoUrl ? (
                 <img
-                  src={job.logoUrl}
+                  src={getMediaUrl(job.logoUrl)}
                   alt={job.companyName || 'Company logo'}
                   className="w-12 h-12 rounded-xl object-contain border border-slate-100 bg-slate-50 shrink-0"
                 />

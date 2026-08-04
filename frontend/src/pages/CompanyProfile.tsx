@@ -5,6 +5,7 @@ import api from '../services/api';
 import type { EmployerProfile, Job } from '../types';
 import { Globe, Building, Users, ShieldCheck, ArrowLeft, MapPin } from 'lucide-react';
 import { JobCardSkeleton } from '../components/Skeletons';
+import { getMediaUrl } from '../utils/url';
 
 export const CompanyProfile: React.FC = () => {
   const { id: userId } = useParams<{ id: string }>();
@@ -67,7 +68,7 @@ export const CompanyProfile: React.FC = () => {
           <div className="flex items-center gap-4">
             {profile.logoUrl ? (
               <img
-                src={profile.logoUrl}
+                src={getMediaUrl(profile.logoUrl)}
                 alt={profile.companyName}
                 className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-contain border border-slate-100 bg-slate-50 shrink-0"
               />

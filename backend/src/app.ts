@@ -13,20 +13,39 @@ import swaggerRouter from './routes/swagger';
 
 const app = express();
 
-// 1. Security Headers (Helmet)
-app.use(helmet());
+// Trust reverse proxy (Railway / Cloudflare / Nginx) for secure cookies & X-Forwarded-Proto
+app.set('trust proxy', 1);
 
-// 2. CORS - Configured, non-wildcard
-const allowedOrigins = [env.FRONTEND_URL];
+// 1. Security Headers (Helmet) - allow cross-origin loading of static uploads (logos, photos, resumes)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
+// 2. CORS - Configured production and deployment origins
+const allowedOrigins = [
+  env.FRONTEND_URL.replace(/\/$/, ''),
+  'https://job-portal-abinash-app.netlify.app',
+];
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. Postman, curl, mobile apps)
       if (!origin) return callback(null, true);
       
-      if (allowedOrigins.includes(origin) || env.NODE_ENV === 'development') {
+      const cleanOrigin = origin.replace(/\/$/, '');
+      if (
+        allowedOrigins.includes(cleanOrigin) ||
+        cleanOrigin.endsWith('.netlify.app') ||
+        cleanOrigin.includes('localhost') ||
+        cleanOrigin.includes('127.0.0.1') ||
+        env.NODE_ENV === 'development'
+      ) {
         callback(null, true);
       } else {
+        logger.error(`CORS Blocked: Origin [${origin}] is not in allowed origins [${allowedOrigins.join(', ')}]`);
         callback(new Error('Not allowed by CORS settings'));
       }
     },

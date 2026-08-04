@@ -8,6 +8,7 @@ import type { EmployerProfile } from '../../types';
 import { useToastStore } from '../../context/toastStore';
 import { Loader2, Save, ArrowLeft, Camera, Globe } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getMediaUrl } from '../../utils/url';
 
 const companySchema = z.object({
   companyName: z.string().min(1, 'Company name is required'),
@@ -111,8 +112,6 @@ export const EmployerProfilePage: React.FC = () => {
     );
   }
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
-  const staticApiUrl = apiBaseUrl.replace('/api/v1', ''); // Prefix relative uploads URLs
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8 bg-background min-h-screen space-y-8 animate-fade-in">
@@ -139,7 +138,7 @@ export const EmployerProfilePage: React.FC = () => {
             <div className="relative inline-block mx-auto">
               {profile?.logoUrl ? (
                 <img
-                  src={profile.logoUrl.startsWith('http') ? profile.logoUrl : `${staticApiUrl}${profile.logoUrl}`}
+                  src={getMediaUrl(profile.logoUrl)}
                   alt="Company logo"
                   className="w-24 h-24 rounded-2xl object-contain border-2 border-slate-100 shadow-sm p-1 bg-slate-50"
                 />

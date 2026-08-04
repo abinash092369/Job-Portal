@@ -6,6 +6,7 @@ import type { Job, Application } from '../../types';
 import { useToastStore } from '../../context/toastStore';
 import { ArrowLeft, ChevronRight, MessageSquare, Loader2, Download, ExternalLink, X } from 'lucide-react';
 import { CandidateCardSkeleton } from '../../components/Skeletons';
+import { getMediaUrl } from '../../utils/url';
 
 const stages: { id: Application['status']; label: string; color: string }[] = [
   { id: 'applied', label: 'Applied', color: 'border-t-2 border-blue-400' },
@@ -106,8 +107,6 @@ export const ApplicantTracking: React.FC = () => {
     return map;
   }, [applications]);
 
-  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
-  const staticApiUrl = apiBaseUrl.replace('/api/v1', '');
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 bg-background min-h-screen space-y-6 animate-fade-in">
@@ -302,7 +301,7 @@ export const ApplicantTracking: React.FC = () => {
                 <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Resume Attachment</h4>
                 <div className="flex items-center gap-2">
                   <a
-                    href={activeApp.resumeUrl.startsWith('http') ? activeApp.resumeUrl : `${staticApiUrl}${activeApp.resumeUrl}`}
+                    href={getMediaUrl(activeApp.resumeUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50"
@@ -310,7 +309,7 @@ export const ApplicantTracking: React.FC = () => {
                     <Download className="w-4 h-4" /> Download Resume
                   </a>
                   <a
-                    href={activeApp.resumeUrl.startsWith('http') ? activeApp.resumeUrl : `${staticApiUrl}${activeApp.resumeUrl}`}
+                    href={getMediaUrl(activeApp.resumeUrl)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-50 border border-primary/10 text-primary rounded-xl text-xs font-semibold hover:bg-indigo-50/70"

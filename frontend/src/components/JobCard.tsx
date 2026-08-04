@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import type { Job } from '../types';
-
+import { getMediaUrl } from '../utils/url';
 
 interface JobCardProps {
   job: Job;
@@ -19,7 +19,7 @@ export const JobCard: React.FC<JobCardProps> = ({ job }) => {
           <div className="flex items-center gap-3">
             {job.logoUrl ? (
               <img
-                src={job.logoUrl}
+                src={getMediaUrl(job.logoUrl)}
                 alt={job.companyName || 'Company logo'}
                 className="w-10 h-10 rounded-xl object-contain border border-slate-100 bg-slate-50 shrink-0"
               />

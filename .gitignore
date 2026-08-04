@@ -40,3 +40,7 @@ backend/uploads/*
 
 # Local Netlify folder
 .netlify
+
+# Temporary railway login files
+railway_login.txt
+
