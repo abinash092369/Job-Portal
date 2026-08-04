@@ -16,25 +16,50 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
   SMTP_FROM: z.string().default('Job Portal <noreply@jobportal.com>'),
-  FRONTEND_URL: z.string().url().default('http://localhost:3000'),
+  FRONTEND_URL: z.string().url('FRONTEND_URL must be a valid URL').optional(),
   MONGODB_URI: z.string().refine(val => val.startsWith('mongodb://') || val.startsWith('mongodb+srv://'), {
     message: 'Invalid MongoDB connection URI',
   }).default('mongodb://localhost:27017/jobportal'),
   CLOUDINARY_CLOUD_NAME: z.string().optional().default(''),
   CLOUDINARY_API_KEY: z.string().optional().default(''),
   CLOUDINARY_API_SECRET: z.string().optional().default(''),
+}).superRefine((data, ctx) => {
+  const isProd = data.NODE_ENV === 'production' || process.env.NODE_ENV === 'production';
+  if (isProd) {
+    if (!data.FRONTEND_URL) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['FRONTEND_URL'],
+        message: 'FATAL: FRONTEND_URL environment variable is REQUIRED in production environment',
+      });
+    } else if (data.FRONTEND_URL.includes('localhost') || data.FRONTEND_URL.includes('127.0.0.1')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['FRONTEND_URL'],
+        message: `FATAL: FRONTEND_URL cannot contain localhost or 127.0.0.1 in production! Received: ${data.FRONTEND_URL}`,
+      });
+    }
+  }
 });
 
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('❌ Invalid environment variables:');
+  console.error('❌ FATAL STARTUP FAILURE: Invalid environment variables configuration:');
   console.error(JSON.stringify(parsed.error.format(), null, 2));
+  process.exit(1);
+}
+
+const rawFrontendUrl = parsed.data.FRONTEND_URL || (parsed.data.NODE_ENV === 'production' ? '' : 'http://localhost:5173');
+
+if (parsed.data.NODE_ENV === 'production' && (!rawFrontendUrl || rawFrontendUrl.includes('localhost'))) {
+  console.error('❌ FATAL STARTUP FAILURE: Production FRONTEND_URL is missing or contains localhost.');
   process.exit(1);
 }
 
 export const env = {
   ...parsed.data,
-  FRONTEND_URL: parsed.data.FRONTEND_URL.replace(/\/$/, ''),
+  FRONTEND_URL: rawFrontendUrl.replace(/\/$/, ''),
 };
+
 export type Env = z.infer<typeof envSchema>;

@@ -28,11 +28,17 @@ export async function register(req: Request, res: Response, next: NextFunction):
 
 export async function verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const token = (req.query.token as string) || req.body.token;
+    const token = (req.query.token as string) || req.body?.token;
     if (!token) {
       throw new BadRequestError('Verification token is required');
     }
     await authService.verifyEmail(token);
+
+    const acceptHeader = req.headers.accept || '';
+    if (acceptHeader.includes('text/html') && !req.xhr) {
+      return res.redirect(`${env.FRONTEND_URL}/verify-email?status=success`);
+    }
+
     res.status(200).json(
       formatResponse(true, null, 'Email verification successful. You can now log in.')
     );
