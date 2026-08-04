@@ -75,4 +75,59 @@ describe('Auth Endpoints Integration', () => {
     expect(logoutRes.status).toBe(200);
     expect(logoutRes.body.success).toBe(true);
   });
+
+  test('should handle re-registration and resend-verification for unverified users', async () => {
+    const unverifiedCredentials = {
+      email: 'unverified-user@example.com',
+      password: 'Password123!',
+      role: 'candidate',
+    };
+
+    // 1. Initial Register (unverified)
+    const reg1 = await request(app).post('/api/v1/auth/register').send(unverifiedCredentials);
+    expect(reg1.status).toBe(201);
+
+    const user1 = await userRepository.findByEmail(unverifiedCredentials.email);
+    expect(user1?.isVerified).toBe(false);
+    const token1 = user1?.verificationToken;
+    expect(token1).toBeDefined();
+
+    // 2. Attempt login before verification (should fail with 400)
+    const loginAttempt = await request(app).post('/api/v1/auth/login').send({
+      email: unverifiedCredentials.email,
+      password: unverifiedCredentials.password,
+    });
+    expect(loginAttempt.status).toBe(400);
+    expect(loginAttempt.body.message).toContain('Please verify your email address');
+
+    // 3. Re-register with same email while unverified (should issue fresh token and overwrite old token)
+    const reg2 = await request(app).post('/api/v1/auth/register').send(unverifiedCredentials);
+    expect(reg2.status).toBe(201);
+
+    const user2 = await userRepository.findByEmail(unverifiedCredentials.email);
+    const token2 = user2?.verificationToken;
+    expect(token2).toBeDefined();
+    expect(token2).not.toBe(token1); // Old token expired/replaced
+
+    // 4. Resend verification email endpoint
+    const resendRes = await request(app).post('/api/v1/auth/resend-verification').send({
+      email: unverifiedCredentials.email,
+    });
+    expect(resendRes.status).toBe(200);
+
+    const user3 = await userRepository.findByEmail(unverifiedCredentials.email);
+    const token3 = user3?.verificationToken;
+    expect(token3).toBeDefined();
+    expect(token3).not.toBe(token2); // Replaced with new token
+
+    // 5. Verify email with latest token
+    const verifyRes = await request(app)
+      .get('/api/v1/auth/verify-email')
+      .query({ token: token3 });
+    expect(verifyRes.status).toBe(200);
+
+    // 6. Verify unverified re-register now fails with 409 Conflict since account is verified
+    const reg3 = await request(app).post('/api/v1/auth/register').send(unverifiedCredentials);
+    expect(reg3.status).toBe(409);
+  });
 });

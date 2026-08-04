@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../context/authStore';
 import { useToastStore } from '../../context/toastStore';
-import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight, ShieldAlert, Send } from 'lucide-react';
 import api from '../../services/api';
 import { loginSchema } from '../../utils/validationSchemas';
 
@@ -19,6 +19,8 @@ export const Login: React.FC = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
 
   // Retrieve redirects redirect location from Router state
   const from = (location.state as any)?.from?.pathname || '';
@@ -31,8 +33,23 @@ export const Login: React.FC = () => {
     resolver: zodResolver(loginSchema),
   });
 
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail) return;
+    setResending(true);
+    try {
+      await api.post('/auth/resend-verification', { email: unverifiedEmail });
+      addToast('Fresh verification email sent! Please check your inbox.', 'success');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to resend verification email.';
+      addToast(msg, 'error');
+    } finally {
+      setResending(false);
+    }
+  };
+
   const onSubmit = async (data: LoginFormValues) => {
     setSubmitting(true);
+    setUnverifiedEmail(null);
     try {
       const res = await api.post('/auth/login', data);
       const { user, accessToken } = res.data.data;
@@ -56,6 +73,9 @@ export const Login: React.FC = () => {
       }
     } catch (error: any) {
       const serverMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
+      if (serverMessage.toLowerCase().includes('verify') || serverMessage.toLowerCase().includes('unverified')) {
+        setUnverifiedEmail(data.email);
+      }
       addToast(serverMessage, 'error');
     } finally {
       setSubmitting(false);
@@ -78,6 +98,35 @@ export const Login: React.FC = () => {
             </Link>
           </p>
         </div>
+
+        {unverifiedEmail && (
+          <div className="p-4 bg-amber-50 border border-amber-200/80 rounded-xl space-y-3 text-left animate-fade-in">
+            <div className="flex items-start gap-2.5 text-amber-900">
+              <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5 text-amber-600" />
+              <div className="space-y-0.5">
+                <h4 className="text-xs font-bold">Email Verification Required</h4>
+                <p className="text-[11px] text-amber-700 leading-relaxed">
+                  Your account ({unverifiedEmail}) is not verified yet. Please check your email or click below to receive a fresh verification link.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resending}
+              className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-sm"
+            >
+              {resending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  Resend Verification Email
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">

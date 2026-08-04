@@ -10,12 +10,14 @@ import {
   verifyEmailSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  resendVerificationSchema,
 } from './auth.validation';
 
 const router = Router();
 
 router.post('/register', validate(registerSchema), authController.register);
 router.get('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
+router.post('/resend-verification', authRateLimiter, validate(resendVerificationSchema), authController.resendVerification);
 router.post('/login', authRateLimiter, validate(loginSchema), authController.login);
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);

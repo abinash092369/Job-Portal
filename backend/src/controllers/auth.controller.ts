@@ -47,6 +47,21 @@ export async function verifyEmail(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function resendVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      throw new BadRequestError('Email address is required');
+    }
+    await authService.resendVerificationEmail(email);
+    res.status(200).json(
+      formatResponse(true, null, 'If an unverified account exists for this email, a verification link has been sent.')
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { email, password } = req.body;

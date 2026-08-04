@@ -13,7 +13,32 @@ class AuthService {
   async register(registerInput: { email: string; passwordPlain: string; role: 'employer' | 'candidate' }): Promise<Omit<User, 'passwordHash'>> {
     const existing = await userRepository.findByEmail(registerInput.email);
     if (existing) {
-      throw new ConflictError('Email is already registered');
+      if (existing.isVerified) {
+        throw new ConflictError('Email is already registered');
+      }
+      
+      // If user exists but is unverified, re-hash password and issue a fresh verification token & expiry
+      const hashedPassword = await bcrypt.hash(registerInput.passwordPlain, this.saltRounds);
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      const updatedUser = await userRepository.update(existing.id, {
+        passwordHash: hashedPassword,
+        role: registerInput.role,
+        verificationToken,
+        verificationTokenExpires,
+      });
+
+      if (!updatedUser) {
+        throw new BadRequestError('Failed to update unverified user profile');
+      }
+
+      emailService.sendVerificationEmail(updatedUser.email, verificationToken).catch((err) => {
+        console.error(`Failed to send verification email to ${updatedUser.email}:`, err);
+      });
+
+      const { passwordHash, ...userResponse } = updatedUser;
+      return userResponse;
     }
 
     const hashedPassword = await bcrypt.hash(registerInput.passwordPlain, this.saltRounds);
@@ -39,6 +64,30 @@ class AuthService {
 
     const { passwordHash, ...userResponse } = newUser;
     return userResponse;
+  }
+
+  async resendVerificationEmail(email: string): Promise<void> {
+    const user = await userRepository.findByEmail(email);
+    if (!user) {
+      // Prevent user enumeration by silently returning
+      return;
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestError('Email address is already verified');
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await userRepository.update(user.id, {
+      verificationToken,
+      verificationTokenExpires,
+    });
+
+    emailService.sendVerificationEmail(user.email, verificationToken).catch((err) => {
+      console.error(`Failed to resend verification email to ${user.email}:`, err);
+    });
   }
 
   async verifyEmail(token: string): Promise<void> {
