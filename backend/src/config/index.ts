@@ -17,7 +17,9 @@ if (nodeEnv === 'production' && normalizedFrontendUrl.includes('localhost')) {
 export const config = {
   port: parseInt(process.env.PORT || '5000', 10),
   nodeEnv,
-  mongodbUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/job-portal',
+  mongodbUri:
+    process.env.MONGODB_URI ||
+    'mongodb+srv://infoabhionchain_db_user:gudu123@jobportal.1amtnjs.mongodb.net/?appName=jobportal',
   jwtAccessSecret: process.env.JWT_ACCESS_SECRET || 'super_secret_access_key_12345!',
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'super_secret_refresh_key_67890!',
   jwtAccessExpiration: process.env.JWT_ACCESS_EXPIRY || '15m',
