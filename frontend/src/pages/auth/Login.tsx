@@ -170,9 +170,24 @@ export const Login: React.FC = () => {
 
     setLoading(true);
     try {
+      if ((window as any).recaptchaVerifier) {
+        try {
+          (window as any).recaptchaVerifier.clear();
+        } catch (e) {
+          // ignore cleanup error
+        }
+        (window as any).recaptchaVerifier = null;
+      }
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+        container.innerHTML = '';
+      }
+
       const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'invisible',
       });
+      (window as any).recaptchaVerifier = recaptchaVerifier;
+
       const confirmation = await signInWithPhoneNumber(auth, phone.trim(), recaptchaVerifier);
       setConfirmationResult(confirmation);
       setOtpSent(true);
