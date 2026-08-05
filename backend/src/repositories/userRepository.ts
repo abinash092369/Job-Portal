@@ -1,6 +1,10 @@
 import { User, IUser } from '../models/User';
 
 export class UserRepository {
+  async findByFirebaseUid(firebaseUid: string): Promise<IUser | null> {
+    return User.findOne({ firebaseUid, deletedAt: null });
+  }
+
   async findByEmail(email: string): Promise<IUser | null> {
     return User.findOne({ email: email.toLowerCase(), deletedAt: null });
   }
@@ -9,16 +13,12 @@ export class UserRepository {
     return User.findOne({ _id: id, deletedAt: null });
   }
 
-  async findByVerificationToken(token: string): Promise<IUser | null> {
-    return User.findOne({ verificationToken: token, deletedAt: null });
+  async findByGoogleId(googleId: string): Promise<IUser | null> {
+    return User.findOne({ googleId, deletedAt: null });
   }
 
-  async findByResetPasswordToken(token: string): Promise<IUser | null> {
-    return User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: new Date() },
-      deletedAt: null,
-    });
+  async findByPhone(phone: string): Promise<IUser | null> {
+    return User.findOne({ phone, deletedAt: null });
   }
 
   async createUser(data: Partial<IUser>): Promise<IUser> {

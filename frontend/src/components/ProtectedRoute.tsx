@@ -30,7 +30,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Guest only routes (e.g., login, register, forgot-password)
+  // Guest only routes (e.g., login, register)
   if (guestOnly && user) {
     if (user.role === 'employer') {
       return <Navigate to="/employer/dashboard" replace />;

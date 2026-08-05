@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../../services/api';
 import { useToastStore } from '../../context/toastStore';
 import type { User } from '../../types';
-import { Search, Ban, CheckCircle, ArrowLeft, ShieldCheck, ShieldAlert, ChevronLeft, ChevronRight, UserPlus, UserMinus } from 'lucide-react';
+import { Search, Ban, CheckCircle, ArrowLeft, ChevronLeft, ChevronRight, UserPlus, UserMinus } from 'lucide-react';
 import { JobCardSkeleton } from '../../components/Skeletons';
 
 export const UserManagement: React.FC = () => {
@@ -45,43 +45,19 @@ export const UserManagement: React.FC = () => {
     },
   });
 
-  // Toggle employer verification mutation
-  const toggleVerificationMutation = useMutation({
-    mutationFn: async ({ id, isVerified }: { id: string; isVerified: boolean }) => {
-      await api.patch(`/admin/employers/${id}/verify`, { isVerified });
-      return { id, isVerified };
-    },
-    onSuccess: (data) => {
-      const action = data.isVerified ? 'verified' : 'unverified';
-      addToast(`Employer successfully ${action}!`, 'success');
-      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
-    },
-    onError: (err: any) => {
-      const msg = err.response?.data?.message || 'Failed to update employer verification';
-      addToast(msg, 'error');
-    },
-  });
-
   const handleSuspendClick = (user: User) => {
     const isSuspended = !user.isSuspended;
     const actionText = isSuspended ? 'suspend' : 'unsuspend';
-    if (window.confirm(`Are you sure you want to ${actionText} user: ${user.email}?`)) {
+    if (window.confirm(`Are you sure you want to ${actionText} user: ${user.email || user.phone || user.name}?`)) {
       toggleSuspensionMutation.mutate({ id: user.id, isSuspended });
-    }
-  };
-
-  const handleVerifyClick = (user: User) => {
-    const isVerified = !user.isVerified;
-    const actionText = isVerified ? 'verify' : 'unverify';
-    if (window.confirm(`Are you sure you want to ${actionText} employer: ${user.email}?`)) {
-      toggleVerificationMutation.mutate({ id: user.id, isVerified });
     }
   };
 
   // Filtered users calculation
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
-      const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const identifier = `${user.email || ''} ${user.phone || ''} ${user.name || ''}`;
+      const matchesSearch = identifier.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesRole = selectedRole === 'all' || user.role === selectedRole;
       
@@ -203,9 +179,9 @@ export const UserManagement: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/50 text-slate-400 font-bold uppercase">
-                  <th className="px-6 py-4 font-semibold">User Email</th>
+                  <th className="px-6 py-4 font-semibold">User Details</th>
                   <th className="px-6 py-4 font-semibold">Role</th>
-                  <th className="px-6 py-4 font-semibold">Verification status</th>
+                  <th className="px-6 py-4 font-semibold">Auth Provider</th>
                   <th className="px-6 py-4 font-semibold">Suspended status</th>
                   <th className="px-6 py-4 font-semibold">Registration Date</th>
                   <th className="px-6 py-4 font-semibold text-right">Actions</th>
@@ -214,7 +190,7 @@ export const UserManagement: React.FC = () => {
               <tbody className="divide-y divide-slate-50">
                 {paginatedUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-50/30 group">
-                    <td className="px-6 py-4.5 font-bold text-slate-800">{user.email}</td>
+                    <td className="px-6 py-4.5 font-bold text-slate-800">{user.email || user.phone || user.name || user.id}</td>
                     
                     <td className="px-6 py-4.5">
                       <span className={`text-[9px] font-bold border px-2.5 py-0.5 rounded-full uppercase ${getRoleBadgeStyle(user.role)}`}>
@@ -223,21 +199,9 @@ export const UserManagement: React.FC = () => {
                     </td>
 
                     <td className="px-6 py-4.5">
-                      {user.role === 'employer' ? (
-                        user.isVerified ? (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold border border-emerald-100 bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full uppercase">
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            Verified
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold border border-slate-100 bg-slate-50 text-slate-500 px-2.5 py-0.5 rounded-full uppercase">
-                            <ShieldAlert className="w-3.5 h-3.5" />
-                            Unverified
-                          </span>
-                        )
-                      ) : (
-                        <span className="text-slate-400">-</span>
-                      )}
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold border border-slate-100 bg-slate-50 text-slate-600 px-2.5 py-0.5 rounded-full uppercase">
+                        {user.provider}
+                      </span>
                     </td>
 
                     <td className="px-6 py-4.5">
@@ -263,20 +227,6 @@ export const UserManagement: React.FC = () => {
                     </td>
 
                     <td className="px-6 py-4.5 text-right space-x-1.5 shrink-0">
-                      {/* Employer verification action */}
-                      {user.role === 'employer' && (
-                        <button
-                          onClick={() => handleVerifyClick(user)}
-                          className={`px-3 py-1.5 rounded-lg border text-[10px] font-semibold transition-all ${
-                            user.isVerified 
-                              ? 'border-slate-200 text-slate-600 hover:bg-slate-50' 
-                              : 'border-emerald-200 text-emerald-700 bg-emerald-50/30 hover:bg-emerald-50'
-                          }`}
-                        >
-                          {user.isVerified ? 'Unverify' : 'Verify'}
-                        </button>
-                      )}
-
                       {/* Suspension action */}
                       {user.role !== 'admin' && (
                         <button

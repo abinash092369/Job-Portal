@@ -37,9 +37,13 @@ export const authenticate = async (
 
   req.user = {
     id: dbUser._id.toString(),
-    email: dbUser.email,
+    name: dbUser.name || '',
+    email: dbUser.email || undefined,
+    phone: dbUser.phone || undefined,
+    googleId: dbUser.googleId || undefined,
+    avatar: dbUser.avatar || '',
     role: dbUser.role,
-    isVerified: dbUser.isVerified,
+    provider: dbUser.provider,
     isSuspended: dbUser.isSuspended,
   };
 

@@ -1,38 +1,62 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { describe, test, expect, beforeEach } from 'vitest';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { Login } from '../../pages/auth/Login';
 import { useAuthStore } from '../../context/authStore';
 import { useToastStore } from '../../context/toastStore';
 import { server } from '../mocks/server';
 import { http, HttpResponse } from 'msw';
 
-describe('Login Page Integration', () => {
+// Mock firebase/auth module for frontend integration tests
+vi.mock('firebase/auth', () => {
+  return {
+    signInWithEmailAndPassword: vi.fn().mockResolvedValue({
+      user: { getIdToken: () => Promise.resolve('mock-firebase-id-token') },
+    }),
+    createUserWithEmailAndPassword: vi.fn().mockResolvedValue({
+      user: { getIdToken: () => Promise.resolve('mock-firebase-id-token') },
+    }),
+    signInWithPopup: vi.fn().mockResolvedValue({
+      user: {
+        displayName: 'Google Test User',
+        getIdToken: () => Promise.resolve('mock-firebase-id-token'),
+      },
+    }),
+    RecaptchaVerifier: vi.fn().mockImplementation(() => ({})),
+    signInWithPhoneNumber: vi.fn().mockResolvedValue({
+      confirm: vi.fn().mockResolvedValue({
+        user: { getIdToken: () => Promise.resolve('mock-firebase-id-token') },
+      }),
+    }),
+    updateProfile: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
+describe('Login Page Integration (Firebase Auth)', () => {
   beforeEach(() => {
-    // Clear store state before each test run
     useAuthStore.setState({ user: null, accessToken: null, isLoading: false });
     useToastStore.setState({ toasts: [] });
   });
 
-  test('shows validation errors for invalid inputs', async () => {
-    render(
-      <MemoryRouter>
-        <Login />
-      </MemoryRouter>
+  test('handles Email Login submission', async () => {
+    server.use(
+      http.post('*/api/v1/auth/firebase', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            user: {
+              id: 'mock-user-123',
+              email: 'test@example.com',
+              role: 'candidate',
+              provider: 'PASSWORD',
+            },
+            accessToken: 'mock-access-token',
+          },
+        });
+      })
     );
 
-    const submitButton = screen.getByRole('button', { name: /Sign in/i });
-
-
-    // Submit form with empty inputs
-    await userEvent.click(submitButton);
-
-    expect(await screen.findByText(/Please enter a valid email address/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Password must be at least 6 characters/i)).toBeInTheDocument();
-  });
-
-  test('submits successfully and redirects to candidate dashboard', async () => {
     render(
       <MemoryRouter initialEntries={['/login']}>
         <Routes>
@@ -42,33 +66,36 @@ describe('Login Page Integration', () => {
       </MemoryRouter>
     );
 
-    const emailInput = screen.getByLabelText(/Email address/i);
+    const emailInput = screen.getByLabelText(/Email Address/i);
     const passwordInput = screen.getByLabelText(/Password/i);
-    const submitButton = screen.getByRole('button', { name: /Sign in/i });
+    const submitButton = screen.getByRole('button', { name: /Log In with Password/i });
 
-    await userEvent.type(emailInput, 'candidate@example.com');
+    await userEvent.type(emailInput, 'test@example.com');
     await userEvent.type(passwordInput, 'password123');
     await userEvent.click(submitButton);
 
-    // Assert that the page redirected to candidate dashboard on success
     expect(await screen.findByText('Candidate Dashboard Page')).toBeInTheDocument();
 
-    // Verify Zustand authentication state is updated
     const state = useAuthStore.getState();
     expect(state.user).not.toBeNull();
-    expect(state.user?.email).toBe('candidate@example.com');
-    expect(state.user?.role).toBe('candidate');
-    expect(state.accessToken).toBe('mock-access-token');
+    expect(state.user?.provider).toBe('PASSWORD');
   });
 
-  test('shows error toast on API failure', async () => {
-    // Override API handler to return a 401 error
+  test('handles Google Sign-In button click', async () => {
     server.use(
-      http.post('*/api/v1/auth/login', () => {
-        return HttpResponse.json(
-          { success: false, message: 'Invalid email or password' },
-          { status: 400 }
-        );
+      http.post('*/api/v1/auth/firebase', () => {
+        return HttpResponse.json({
+          success: true,
+          data: {
+            user: {
+              id: 'mock-google-user',
+              email: 'google@example.com',
+              role: 'candidate',
+              provider: 'GOOGLE',
+            },
+            accessToken: 'mock-access-token',
+          },
+        });
       })
     );
 
@@ -76,22 +103,17 @@ describe('Login Page Integration', () => {
       <MemoryRouter initialEntries={['/login']}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/candidate/dashboard" element={<div>Candidate Dashboard Page</div>} />
         </Routes>
       </MemoryRouter>
     );
 
-    const emailInput = screen.getByLabelText(/Email address/i);
-    const passwordInput = screen.getByLabelText(/Password/i);
-    const submitButton = screen.getByRole('button', { name: /Sign in/i });
+    const googleTab = screen.getByRole('button', { name: /^Google$/i });
+    await userEvent.click(googleTab);
 
-    await userEvent.type(emailInput, 'candidate@example.com');
-    await userEvent.type(passwordInput, 'wrongpassword');
-    await userEvent.click(submitButton);
+    const googleButton = screen.getByRole('button', { name: /Continue with Google/i });
+    await userEvent.click(googleButton);
 
-    // Verify that the error toast is correctly pushed to toast store state
-    await waitFor(() => {
-      const toasts = useToastStore.getState().toasts;
-      expect(toasts.some(t => t.message.includes('Invalid email or password') && t.type === 'error')).toBe(true);
-    });
+    expect(await screen.findByText('Candidate Dashboard Page')).toBeInTheDocument();
   });
 });

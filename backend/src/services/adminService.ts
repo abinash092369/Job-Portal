@@ -15,15 +15,18 @@ export class AdminService {
 
   async getAllUsers() {
     const users = await User.find({ deletedAt: null })
-      .select('email role isVerified isSuspended createdAt updatedAt')
+      .select('name email phone googleId role provider isSuspended createdAt updatedAt')
       .sort({ createdAt: -1 })
       .lean();
 
     return users.map((u) => ({
       id: u._id.toString(),
-      email: u.email,
+      name: u.name || '',
+      email: u.email || undefined,
+      phone: u.phone || undefined,
+      googleId: u.googleId || undefined,
       role: u.role,
-      isVerified: u.isVerified,
+      provider: u.provider,
       isSuspended: u.isSuspended,
       createdAt: u.createdAt.toISOString(),
       updatedAt: u.updatedAt.toISOString(),
@@ -46,9 +49,11 @@ export class AdminService {
 
     return {
       id: user._id.toString(),
-      email: user.email,
+      name: user.name || '',
+      email: user.email || undefined,
+      phone: user.phone || undefined,
       role: user.role,
-      isVerified: user.isVerified,
+      provider: user.provider,
       isSuspended: user.isSuspended,
     };
   }

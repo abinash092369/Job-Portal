@@ -7,6 +7,8 @@ export type JobStatus = 'draft' | 'active' | 'closed';
 export type ApplicationStatus = 'applied' | 'reviewed' | 'shortlisted' | 'interview' | 'rejected' | 'hired';
 export type NotificationType = 'application_received' | 'status_changed' | 'job_expiring';
 
+export type AuthProvider = 'PASSWORD' | 'GOOGLE' | 'PHONE';
+
 export interface ApiResponse<T = any> {
   success: boolean;
   data: T | null;
@@ -15,10 +17,17 @@ export interface ApiResponse<T = any> {
 
 export interface AuthUser {
   id: string;
-  email: string;
+  firebaseUid?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  googleId?: string;
+  avatar?: string;
   role: UserRole;
-  isVerified: boolean;
+  provider: AuthProvider;
   isSuspended?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthenticatedRequest extends Request {

@@ -6,9 +6,13 @@ export const generateAccessToken = (user: AuthUser): string => {
   return jwt.sign(
     {
       id: user.id,
+      name: user.name,
       email: user.email,
+      phone: user.phone,
+      googleId: user.googleId,
+      avatar: user.avatar,
       role: user.role,
-      isVerified: user.isVerified,
+      provider: user.provider,
     },
     config.jwtAccessSecret,
     { expiresIn: '15m' }

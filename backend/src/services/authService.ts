@@ -1,10 +1,9 @@
-import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { UserRepository } from '../repositories/userRepository';
 import { ProfileRepository } from '../repositories/profileRepository';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
-import { sendVerificationEmail, sendResetPasswordEmail } from '../utils/email';
-import { UserRole, AuthUser } from '../types';
+import { verifyFirebaseToken } from '../config/firebase-admin';
+import { UserRole, AuthUser, AuthProvider } from '../types';
 
 export class AuthService {
   private userRepo: UserRepository;
@@ -15,110 +14,110 @@ export class AuthService {
     this.profileRepo = new ProfileRepository();
   }
 
+  private hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
   private formatUserResponse(user: any): AuthUser {
     return {
       id: user._id.toString(),
-      email: user.email,
+      firebaseUid: user.firebaseUid || undefined,
+      name: user.name || '',
+      email: user.email || undefined,
+      phone: user.phone || undefined,
+      googleId: user.googleId || undefined,
+      avatar: user.avatar || '',
       role: user.role,
-      isVerified: user.isVerified,
+      provider: user.provider,
       isSuspended: user.isSuspended,
+      createdAt: user.createdAt?.toISOString?.() || user.createdAt,
+      updatedAt: user.updatedAt?.toISOString?.() || user.updatedAt,
     };
   }
 
-  async register(email: string, password: string, role: UserRole) {
-    const existingUser = await this.userRepo.findByEmail(email);
-    if (existingUser) {
-      throw new Error('Email is already registered');
+  async firebaseAuth(idToken: string, requestedRole?: UserRole, requestedName?: string) {
+    const decodedToken = await verifyFirebaseToken(idToken);
+    const { uid, email, phoneNumber, displayName, photoURL, provider: rawProvider } = decodedToken;
+
+    // Determine clean AuthProvider enum
+    let provider: AuthProvider = 'PASSWORD';
+    if (rawProvider?.includes('google')) {
+      provider = 'GOOGLE';
+    } else if (rawProvider?.includes('phone') || phoneNumber) {
+      provider = 'PHONE';
     }
 
-    // Hash password with 12 rounds of bcrypt
-    const passwordHash = await bcrypt.hash(password, 12);
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    // 1. Search for user by firebaseUid
+    let user = await this.userRepo.findByFirebaseUid(uid);
 
-    const user = await this.userRepo.createUser({
-      email,
-      passwordHash,
-      role,
-      isVerified: false,
-      isSuspended: false,
-      verificationToken,
-    });
+    // 2. Fallback search by email
+    if (!user && email) {
+      user = await this.userRepo.findByEmail(email);
+    }
 
-    // Create initial empty profile based on user role
-    if (role === 'candidate') {
-      await this.profileRepo.createCandidateProfile({
-        userId: user._id,
-        name: email.split('@')[0],
-        skills: [],
-        experience: [],
-        education: [],
+    // 3. Fallback search by phone
+    if (!user && phoneNumber) {
+      user = await this.userRepo.findByPhone(phoneNumber);
+    }
+
+    if (user) {
+      if (user.isSuspended) {
+        throw new Error('Account suspended. Please contact support.');
+      }
+
+      // Link firebaseUid / avatar / name if missing
+      const updates: any = {};
+      if (!user.firebaseUid) updates.firebaseUid = uid;
+      if (!user.avatar && photoURL) updates.avatar = photoURL;
+      if (!user.name && (displayName || requestedName)) {
+        updates.name = displayName || requestedName;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        user = (await this.userRepo.updateUser(user._id.toString(), updates)) || user;
+      }
+    } else {
+      // Create new MongoDB user account automatically
+      const role: UserRole = requestedRole === 'employer' ? 'employer' : 'candidate';
+      const name =
+        displayName ||
+        requestedName ||
+        (email ? email.split('@')[0] : phoneNumber ? `User ${phoneNumber.slice(-4)}` : 'User');
+
+      user = await this.userRepo.createUser({
+        firebaseUid: uid,
+        name,
+        email: email || undefined,
+        phone: phoneNumber || undefined,
+        avatar: photoURL || '',
+        role,
+        provider,
+        isSuspended: false,
       });
-    } else if (role === 'employer') {
-      await this.profileRepo.createEmployerProfile({
-        userId: user._id,
-        companyName: email.split('@')[0] + ' Company',
-        isVerified: false,
-      });
-    }
 
-    // Send verification email
-    await sendVerificationEmail(email, verificationToken);
-
-    return this.formatUserResponse(user);
-  }
-
-  async verifyEmail(token: string) {
-    const user = await this.userRepo.findByVerificationToken(token);
-    if (!user) {
-      throw new Error('Invalid or expired email verification token');
-    }
-
-    await this.userRepo.updateUser(user._id.toString(), {
-      isVerified: true,
-      verificationToken: null,
-    });
-
-    return true;
-  }
-
-  async resendVerification(email: string) {
-    const user = await this.userRepo.findByEmail(email);
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    if (user.isVerified) {
-      throw new Error('Email is already verified');
-    }
-
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    await this.userRepo.updateUser(user._id.toString(), { verificationToken });
-
-    await sendVerificationEmail(email, verificationToken);
-    return true;
-  }
-
-  async login(email: string, password: string) {
-    const user = await this.userRepo.findByEmail(email);
-    if (!user) {
-      throw new Error('Invalid email or password');
-    }
-
-    if (user.isSuspended) {
-      throw new Error('Account suspended. Please contact support.');
-    }
-
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      throw new Error('Invalid email or password');
+      // Create initial candidate or employer profile
+      if (role === 'candidate') {
+        await this.profileRepo.createCandidateProfile({
+          userId: user._id,
+          name,
+          skills: [],
+          experience: [],
+          education: [],
+        });
+      } else if (role === 'employer') {
+        await this.profileRepo.createEmployerProfile({
+          userId: user._id,
+          companyName: name + ' Company',
+          isVerified: false,
+        });
+      }
     }
 
     const formattedUser = this.formatUserResponse(user);
     const accessToken = generateAccessToken(formattedUser);
     const refreshToken = generateRefreshToken(formattedUser);
 
-    // Hash refresh token before saving to database
-    const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+    const refreshTokenHash = this.hashToken(refreshToken);
     await this.userRepo.updateUser(user._id.toString(), { refreshTokenHash });
 
     return {
@@ -144,52 +143,22 @@ export class AuthService {
       throw new Error('Invalid refresh session');
     }
 
+    const incomingHash = this.hashToken(token);
+    if (user.refreshTokenHash !== incomingHash) {
+      throw new Error('Invalid refresh token');
+    }
+
     const formattedUser = this.formatUserResponse(user);
     const newAccessToken = generateAccessToken(formattedUser);
     const newRefreshToken = generateRefreshToken(formattedUser);
 
-    const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
+    const newRefreshTokenHash = this.hashToken(newRefreshToken);
     await this.userRepo.updateUser(user._id.toString(), { refreshTokenHash: newRefreshTokenHash });
 
     return {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
     };
-  }
-
-  async forgotPassword(email: string) {
-    const user = await this.userRepo.findByEmail(email);
-    if (!user) {
-      // Don't leak user existence
-      return true;
-    }
-
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetExpires = new Date(Date.now() + 3600000); // 1 hour
-
-    await this.userRepo.updateUser(user._id.toString(), {
-      resetPasswordToken: resetToken,
-      resetPasswordExpires: resetExpires,
-    });
-
-    await sendResetPasswordEmail(email, resetToken);
-    return true;
-  }
-
-  async resetPassword(token: string, newPassword: string) {
-    const user = await this.userRepo.findByResetPasswordToken(token);
-    if (!user) {
-      throw new Error('Invalid or expired password reset token');
-    }
-
-    const passwordHash = await bcrypt.hash(newPassword, 12);
-    await this.userRepo.updateUser(user._id.toString(), {
-      passwordHash,
-      resetPasswordToken: null,
-      resetPasswordExpires: null,
-    });
-
-    return true;
   }
 
   async getMe(userId: string) {

@@ -276,10 +276,10 @@ export const Header: React.FC = () => {
                   className="flex items-center gap-2 p-1 rounded-xl hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-primary font-bold text-sm">
-                    {user.email.substring(0, 2).toUpperCase()}
+                    {(user.name || user.email || user.phone || 'U').substring(0, 2).toUpperCase()}
                   </div>
                   <span className="hidden sm:block text-sm font-medium text-slate-700 max-w-[120px] truncate">
-                    {user.email}
+                    {user.name || user.email || user.phone}
                   </span>
                 </button>
 
@@ -287,7 +287,7 @@ export const Header: React.FC = () => {
                   <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-slate-100 bg-white py-2 shadow-premium animate-fade-in">
                     <div className="border-b border-slate-100 px-4 py-2">
                       <p className="text-xs text-slate-400">Signed in as</p>
-                      <p className="truncate text-sm font-semibold text-slate-800">{user.email}</p>
+                      <p className="truncate text-sm font-semibold text-slate-800">{user.name || user.email || user.phone}</p>
                       <span className="inline-block mt-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-primary capitalize">
                         {user.role}
                       </span>

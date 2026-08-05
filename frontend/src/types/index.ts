@@ -1,10 +1,17 @@
 export type UserRole = 'employer' | 'candidate' | 'admin';
 
+export type AuthProvider = 'PASSWORD' | 'GOOGLE' | 'PHONE';
+
 export interface User {
   id: string;
-  email: string;
+  firebaseUid?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  googleId?: string;
+  avatar?: string;
   role: UserRole;
-  isVerified: boolean;
+  provider: AuthProvider;
   isSuspended?: boolean;
   createdAt: string;
   updatedAt: string;

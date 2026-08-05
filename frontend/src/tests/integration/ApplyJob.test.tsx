@@ -27,7 +27,7 @@ describe('Job Application Flow Integration', () => {
         id: 'mock-candidate-id-123',
         email: 'candidate@example.com',
         role: 'candidate',
-        isVerified: true,
+        provider: 'GOOGLE',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },

@@ -3,7 +3,6 @@ import { JobRepository } from '../repositories/jobRepository';
 import { UserRepository } from '../repositories/userRepository';
 import { ProfileRepository } from '../repositories/profileRepository';
 import { NotificationService } from './notificationService';
-import { sendStatusChangeEmail } from '../utils/email';
 import { ApplicationStatus } from '../types';
 import { Types } from 'mongoose';
 
@@ -63,15 +62,6 @@ export class ApplicationService {
       'Application Status Updated',
       `Your application for "${job.title}" has been updated to "${status}".`
     );
-
-    if (candidateUser && candidateUser.email) {
-      await sendStatusChangeEmail(
-        candidateUser.email,
-        candidateName,
-        job.title,
-        status
-      );
-    }
 
     return {
       id: application._id.toString(),

@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 import { config } from '../config';
 import { User } from '../models/User';
 import { EmployerProfile } from '../models/EmployerProfile';
@@ -27,22 +26,22 @@ const seedDatabase = async () => {
     ]);
     console.log('Cleared existing collections.');
 
-    const commonPasswordHash = await bcrypt.hash('password123', 12);
-
     // 1. Create Admins
     console.log('Seeding Admin accounts...');
     const admin1 = await User.create({
+      name: 'System Admin 1',
       email: 'admin1@jobportal.com',
-      passwordHash: commonPasswordHash,
+      googleId: 'google_admin_1',
+      provider: 'GOOGLE',
       role: 'admin',
-      isVerified: true,
       isSuspended: false,
     });
     const admin2 = await User.create({
+      name: 'System Admin 2',
       email: 'admin2@jobportal.com',
-      passwordHash: commonPasswordHash,
+      googleId: 'google_admin_2',
+      provider: 'GOOGLE',
       role: 'admin',
-      isVerified: true,
       isSuspended: false,
     });
 
@@ -50,6 +49,7 @@ const seedDatabase = async () => {
     console.log('Seeding Employer accounts...');
     const employerData = [
       {
+        name: 'TechCorp Manager',
         email: 'techcorp@jobportal.com',
         companyName: 'TechCorp Solutions',
         logoUrl: 'https://images.unsplash.com/photo-1549923746-c502d488b3ea?w=150',
@@ -60,6 +60,7 @@ const seedDatabase = async () => {
         isVerified: true,
       },
       {
+        name: 'Acme Systems Lead',
         email: 'acme@jobportal.com',
         companyName: 'Acme Systems',
         logoUrl: 'https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=150',
@@ -70,6 +71,7 @@ const seedDatabase = async () => {
         isVerified: true,
       },
       {
+        name: 'InnovateX Recruiter',
         email: 'innovatex@jobportal.com',
         companyName: 'InnovateX Labs',
         logoUrl: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=150',
@@ -80,6 +82,7 @@ const seedDatabase = async () => {
         isVerified: false,
       },
       {
+        name: 'CloudScale HR',
         email: 'cloudscale@jobportal.com',
         companyName: 'CloudScale Infrastructure',
         logoUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=150',
@@ -90,6 +93,7 @@ const seedDatabase = async () => {
         isVerified: true,
       },
       {
+        name: 'DesignLabs Lead',
         email: 'designlabs@jobportal.com',
         companyName: 'DesignLabs Creative',
         logoUrl: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=150',
@@ -102,12 +106,15 @@ const seedDatabase = async () => {
     ];
 
     const employers = [];
-    for (const emp of employerData) {
+    for (let idx = 0; idx < employerData.length; idx++) {
+      const emp = employerData[idx];
       const user = await User.create({
+        name: emp.name,
         email: emp.email,
-        passwordHash: commonPasswordHash,
+        googleId: `google_emp_${idx + 1}`,
+        avatar: emp.logoUrl,
+        provider: 'GOOGLE',
         role: 'employer',
-        isVerified: true,
         isSuspended: false,
       });
 
@@ -143,10 +150,13 @@ const seedDatabase = async () => {
 
     for (let i = 1; i <= 15; i++) {
       const user = await User.create({
+        name: `Candidate User ${i}`,
         email: `candidate${i}@jobportal.com`,
-        passwordHash: commonPasswordHash,
+        phone: `+1555010${i < 10 ? '0' + i : i}`,
+        googleId: `google_cand_${i}`,
+        avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`,
+        provider: i % 2 === 0 ? 'GOOGLE' : 'PHONE',
         role: 'candidate',
-        isVerified: i % 5 !== 0, // Most verified, some unverified
         isSuspended: false,
       });
 
@@ -157,7 +167,7 @@ const seedDatabase = async () => {
         headline: `Experienced ${skills[0]} Developer`,
         skills,
         location: i % 2 === 0 ? 'San Francisco, CA' : 'New York, NY',
-        phone: `+1-555-010${i < 10 ? '0' + i : i}`,
+        phone: `+1555010${i < 10 ? '0' + i : i}`,
         resumeUrl: `${config.backendPublicUrl}/uploads/resume-sample-${i}.pdf`,
         profilePhotoUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`,
         experience: [
@@ -242,7 +252,7 @@ const seedDatabase = async () => {
         jobType: 'contract',
         location: 'Chicago, IL',
         experienceLevel: 'Mid Level',
-        status: 'draft', // Draft job for admin review
+        status: 'draft',
       },
       {
         title: 'Machine Learning Specialist',
@@ -266,7 +276,7 @@ const seedDatabase = async () => {
         jobType: 'part-time',
         location: 'Seattle, WA',
         experienceLevel: 'Entry Level',
-        status: 'closed', // Closed job
+        status: 'closed',
       },
     ];
 
@@ -311,7 +321,6 @@ const seedDatabase = async () => {
 
     for (let i = 0; i < candidates.length; i++) {
       const candidate = candidates[i];
-      // Apply to 2 active jobs
       const job1 = activeJobs[i % activeJobs.length];
       const job2 = activeJobs[(i + 3) % activeJobs.length];
 
@@ -368,9 +377,9 @@ const seedDatabase = async () => {
     }
 
     console.log('\n================ SEED COMPLETE ================');
-    console.log(`Admins Created:     2 (admin1@jobportal.com / password123)`);
-    console.log(`Employers Created:  ${employers.length} (e.g. techcorp@jobportal.com / password123)`);
-    console.log(`Candidates Created: ${candidates.length} (e.g. candidate1@jobportal.com / password123)`);
+    console.log(`Admins Created:     2`);
+    console.log(`Employers Created:  ${employers.length}`);
+    console.log(`Candidates Created: ${candidates.length}`);
     console.log(`Jobs Created:       ${jobs.length} (${jobs.filter((j) => j.status === 'active').length} active)`);
     console.log(`Applications:       ${candidates.length * 2}`);
     console.log('===============================================\n');

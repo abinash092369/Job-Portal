@@ -10,7 +10,7 @@ export const handlers = [
           id: 'mock-candidate-id-123',
           email: 'candidate@example.com',
           role: 'candidate',
-          isVerified: true,
+          provider: 'GOOGLE',
         },
         accessToken: 'mock-access-token',
         refreshToken: 'mock-refresh-token',
