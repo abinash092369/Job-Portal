@@ -2,24 +2,20 @@ import app from './app';
 import { env } from './config/env';
 import { logger } from './utils/logger';
 import { connectDatabase } from './config/database';
-import { emailService } from './services/email.service';
 
 async function startServer() {
   // Print runtime values for diagnosis
   console.log("Node Version:", process.version);
   console.log("Platform:", process.platform);
-  console.log("globalThis.crypto:", globalThis.crypto);
 
   // 1. Establish Database Connection
   await connectDatabase();
 
-  // 2. Verify SMTP Connection
-  await emailService.verifyConnection();
-
-  // 3. Start Listening
+  // 2. Start Listening
   const server = app.listen(env.PORT, () => {
     logger.info(`🚀 Server running in [${env.NODE_ENV}] mode on port [${env.PORT}]`);
     logger.info(`🌐 Configured FRONTEND_URL: [${env.FRONTEND_URL}]`);
+    logger.info(`📧 Active Primary Email Provider: Resend SDK`);
     logger.info(`📖 Swagger UI API Docs available at http://localhost:${env.PORT}/docs`);
   });
 

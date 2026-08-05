@@ -173,6 +173,14 @@ export class MongooseUserRepository implements UserRepository {
     const users = await UserModel.find({ deletedAt: null });
     return Promise.all(users.map(mapUser));
   }
+
+  async hardDelete(id: string): Promise<boolean> {
+    if (!mongoose.Types.ObjectId.isValid(id)) return false;
+    await EmailVerificationTokenModel.deleteMany({ userId: id });
+    await PasswordResetTokenModel.deleteMany({ userId: id });
+    const res = await UserModel.deleteOne({ _id: id });
+    return res.deletedCount > 0;
+  }
 }
 
 export const userRepository = new MongooseUserRepository();

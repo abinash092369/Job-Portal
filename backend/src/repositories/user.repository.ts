@@ -7,5 +7,6 @@ export interface UserRepository {
   findByResetToken(token: string): Promise<User | null>;
   create(user: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User>;
   update(id: string, updates: Partial<Omit<User, 'id' | 'createdAt' | 'updatedAt'>>): Promise<User | null>;
+  hardDelete(id: string): Promise<boolean>;
   findAll(): Promise<User[]>;
 }

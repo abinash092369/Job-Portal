@@ -1,143 +1,74 @@
 import { Resend } from 'resend';
-import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
 class EmailService {
   private resend: Resend | null = null;
-  private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
     if (env.RESEND_API_KEY) {
-      logger.info('🚀 Resend SDK initialized for email delivery.');
+      logger.info('🚀 Official Resend SDK initialized as primary email provider.');
       this.resend = new Resend(env.RESEND_API_KEY);
+    } else {
+      logger.warn('⚠️ RESEND_API_KEY is not set. Resend email dispatch will run in mock mode in non-production environment.');
     }
   }
 
-  private getResendInstance(): Resend | null {
+  private getResendInstance(): Resend {
     if (this.resend) return this.resend;
     if (env.RESEND_API_KEY) {
       this.resend = new Resend(env.RESEND_API_KEY);
       return this.resend;
     }
-    return null;
+    if (env.NODE_ENV === 'production') {
+      throw new Error('FATAL: RESEND_API_KEY is required in production environment.');
+    }
+    // Return a mock instance for test/dev environment if key absent
+    return new Resend('re_mock_development_key');
   }
 
-  private async getTransporter(): Promise<nodemailer.Transporter> {
-    if (this.transporter) {
-      return this.transporter;
+  private getFromAddress(): string {
+    if (env.RESEND_FROM && !env.RESEND_FROM.includes('noreply@jobportal.com')) {
+      return env.RESEND_FROM;
     }
-
-    if (!env.SMTP_HOST || !env.SMTP_USER) {
-      if (env.NODE_ENV === 'production' && !env.RESEND_API_KEY) {
-        throw new Error('FATAL: Neither RESEND_API_KEY nor SMTP credentials configured for production email delivery.');
-      }
-      logger.info('SMTP host or user not configured. Establishing dynamic Ethereal Mail mock SMTP for development...');
-      try {
-        const testAccount = await nodemailer.createTestAccount();
-        this.transporter = nodemailer.createTransport({
-          host: testAccount.smtp.host,
-          port: testAccount.smtp.port,
-          secure: testAccount.smtp.secure,
-          auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
-          },
-        });
-        logger.info(`Dynamic Ethereal SMTP established. User: ${testAccount.user}`);
-        return this.transporter;
-      } catch (err: any) {
-        logger.error(`Failed to establish dynamic Ethereal SMTP: ${err.message || err}`);
-        this.transporter = nodemailer.createTransport({
-          jsonTransport: true,
-        });
-        return this.transporter;
-      }
-    }
-
-    this.transporter = nodemailer.createTransport({
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      secure: env.SMTP_PORT === 465,
-      auth: {
-        user: env.SMTP_USER,
-        pass: env.SMTP_PASS,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-    } as any);
-
-    return this.transporter;
+    return 'Job Portal <onboarding@resend.dev>';
   }
 
-  async verifyConnection(): Promise<boolean> {
-    const resend = this.getResendInstance();
-    if (resend) {
-      logger.info(`✅ [Resend SDK Active] Verification email dispatch will use official Resend SDK over HTTPS (Port 443).`);
-      return true;
-    }
+  async sendEmail(to: string, subject: string, html: string): Promise<string> {
+    const from = this.getFromAddress();
+    logger.info(`📨 Sending email via Resend\n   Recipient: ${to}\n   Subject: ${subject}\n   From: ${from}`);
 
-    if (env.NODE_ENV === 'production' && (!env.SMTP_HOST || !env.SMTP_USER)) {
-      logger.error('❌ [Email Service Error] Neither RESEND_API_KEY nor SMTP credentials configured in production!');
-      return false;
+    if (env.NODE_ENV === 'test' || (!env.RESEND_API_KEY && env.NODE_ENV !== 'production')) {
+      const mockId = `mock_resend_id_${Date.now()}`;
+      logger.info(`✅ Verification email sent (Dev/Test Mock)\n   Resend Email ID: ${mockId}`);
+      return mockId;
     }
 
     try {
-      const transporter = await this.getTransporter();
-      await transporter.verify();
-      logger.info(`✅ [SMTP Connected] Verified local SMTP transport to ${env.SMTP_HOST}:${env.SMTP_PORT}`);
-      return true;
-    } catch (err: any) {
-      logger.error(`❌ [SMTP Verification Failed]: ${err.message}`);
-      return false;
-    }
-  }
-
-  async sendEmail(to: string, subject: string, html: string): Promise<void> {
-    const resend = this.getResendInstance();
-    if (resend) {
-      let fromAddress = env.SMTP_FROM;
-      if (!fromAddress || fromAddress.includes('noreply@jobportal.com')) {
-        fromAddress = 'Job Portal <onboarding@resend.dev>';
-      }
-
-      logger.info(`✉️ [Resend SDK] Dispatching email to [${to}] from [${fromAddress}]...`);
+      const resend = this.getResendInstance();
       const { data, error } = await resend.emails.send({
-        from: fromAddress,
+        from,
         to: [to],
         subject,
         html,
       });
 
       if (error) {
-        logger.error(`❌ [Resend API Error] ${error.name}: ${error.message}`);
-        throw new Error(`Resend email delivery failed: ${error.message}`);
+        logger.error(`❌ Resend API Error\n   Name: ${error.name}\n   Message: ${error.message}`);
+        throw new Error(`Resend email dispatch failed: ${error.message}`);
       }
 
-      logger.info(`✅ [Resend Success] Email delivered to ${to}. Message ID: ${data?.id}`);
-      return;
-    }
-
-    // Fallback to local SMTP in development
-    try {
-      const transporter = await this.getTransporter();
-      const info = await transporter.sendMail({
-        from: env.SMTP_FROM,
-        to,
-        subject,
-        html,
-      });
-      logger.info(`✅ [SMTP Success] Delivered email to ${to}. Message ID: ${info.messageId}`);
-    } catch (error: any) {
-      logger.error(`❌ [SMTP Error] Failed to send email to ${to}: ${error.stack || error}`);
-      throw error;
+      const emailId = data?.id || 'unknown_id';
+      logger.info(`✅ Verification email sent\n   Resend Email ID: ${emailId}`);
+      return emailId;
+    } catch (err: any) {
+      logger.error(`❌ Resend API Error\n   Message: ${err.message || err}`);
+      throw err;
     }
   }
 
   async sendVerificationEmail(to: string, token: string): Promise<void> {
     const verificationLink = `${env.FRONTEND_URL}/verify-email?token=${token}`;
-    logger.info(`✉️  Verification Link for ${to}: ${verificationLink}`);
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
         <h2 style="color: #1a202c; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Welcome to Job Portal!</h2>
@@ -154,9 +85,12 @@ class EmailService {
     await this.sendEmail(to, 'Verify Your Email Address', html);
   }
 
+  async sendResendVerificationEmail(to: string, token: string): Promise<void> {
+    await this.sendVerificationEmail(to, token);
+  }
+
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
     const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
-    logger.info(`✉️  Password Reset Link for ${to}: ${resetLink}`);
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
         <h2 style="color: #1a202c; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Password Reset Request</h2>
@@ -173,20 +107,35 @@ class EmailService {
     await this.sendEmail(to, 'Reset Your Password', html);
   }
 
+  async sendWelcomeEmail(to: string, name: string = 'User'): Promise<void> {
+    const html = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
+        <h2 style="color: #2b6cb0; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Welcome to Job Portal, ${name}!</h2>
+        <p style="color: #4a5568; font-size: 16px;">Your account has been successfully verified and activated.</p>
+        <p style="color: #4a5568; font-size: 16px;">You can now log in, explore open job postings, update your profile, and manage your applications.</p>
+      </div>
+    `;
+    await this.sendEmail(to, 'Welcome to Job Portal!', html);
+  }
+
+  async sendEmployerApprovalEmail(to: string, name: string = 'Employer'): Promise<void> {
+    const html = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
+        <h2 style="color: #276749; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Employer Profile Approved</h2>
+        <p style="color: #4a5568; font-size: 16px;">Dear ${name},</p>
+        <p style="color: #4a5568; font-size: 16px;">Your employer organization account has been reviewed and verified by platform administrators.</p>
+        <p style="color: #4a5568; font-size: 16px;">You now have full access to publish job listings and view applicant resumes.</p>
+      </div>
+    `;
+    await this.sendEmail(to, 'Employer Account Approved', html);
+  }
+
   async sendApplicationStatusUpdate(to: string, jobTitle: string, status: string, candidateName: string = 'Candidate'): Promise<void> {
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
         <h2 style="color: #2b6cb0; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Application Status Updated</h2>
         <p style="color: #4a5568; font-size: 16px;">Dear ${candidateName},</p>
-        <p style="color: #4a5568; font-size: 16px;">The status of your job application for the position of <strong>${jobTitle}</strong> has been updated to:</p>
-        <div style="margin: 25px 0; text-align: center;">
-          <span style="background-color: #ebf8ff; color: #2b6cb0; padding: 10px 24px; border-radius: 30px; font-weight: 700; font-size: 18px; border: 1px dashed #bee3f8; text-transform: uppercase;">
-            ${status}
-          </span>
-        </div>
-        <p style="color: #4a5568; font-size: 16px;">We will keep you informed of further updates.</p>
-        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 25px 0;" />
-        <p style="font-size: 12px; color: #a0aec0;">You are receiving this message because you applied to this job posting on our platform.</p>
+        <p style="color: #4a5568; font-size: 16px;">The status of your job application for position <strong>${jobTitle}</strong> was updated to: <strong>${status}</strong>.</p>
       </div>
     `;
     await this.sendEmail(to, `Application Update: ${jobTitle}`, html);

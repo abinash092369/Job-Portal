@@ -33,8 +33,12 @@ class AuthService {
         throw new BadRequestError('Failed to update unverified user profile');
       }
 
-      // Dispatch verification email - fails registration if email delivery fails
-      await emailService.sendVerificationEmail(updatedUser.email, verificationToken);
+      // Dispatch verification email - fails registration & rolls back if email delivery fails
+      try {
+        await emailService.sendVerificationEmail(updatedUser.email, verificationToken);
+      } catch (err: any) {
+        throw new Error(`Failed to send verification email: ${err.message || err}`);
+      }
 
       const { passwordHash, ...userResponse } = updatedUser;
       return userResponse;
@@ -55,8 +59,13 @@ class AuthService {
       verificationTokenExpires,
     });
 
-    // Dispatch verification email - fails registration if email delivery fails
-    await emailService.sendVerificationEmail(newUser.email, verificationToken);
+    // Dispatch verification email - rolls back newly created user if email delivery fails
+    try {
+      await emailService.sendVerificationEmail(newUser.email, verificationToken);
+    } catch (err: any) {
+      await userRepository.hardDelete(newUser.id);
+      throw new Error(`Failed to send verification email. User registration was rolled back: ${err.message || err}`);
+    }
 
     const { passwordHash, ...userResponse } = newUser;
     return userResponse;
@@ -81,12 +90,10 @@ class AuthService {
       verificationTokenExpires,
     });
 
-    emailService.sendVerificationEmail(user.email, verificationToken).catch((err) => {
-      console.error(`Failed to resend verification email to ${user.email}:`, err);
-    });
+    await emailService.sendVerificationEmail(user.email, verificationToken);
   }
 
-  async verifyEmail(token: string): Promise<void> {
+  async verifyEmail(token: string): Promise<string> {
     if (!token) {
       throw new BadRequestError('Verification token is required');
     }
@@ -100,8 +107,9 @@ class AuthService {
           verificationToken: undefined,
           verificationTokenExpires: undefined,
         });
+        return 'Email verified successfully! You can now log in.';
       }
-      return;
+      return 'Email already verified';
     }
 
     throw new BadRequestError('Invalid or expired email verification token');

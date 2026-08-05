@@ -32,15 +32,15 @@ export async function verifyEmail(req: Request, res: Response, next: NextFunctio
     if (!token) {
       throw new BadRequestError('Verification token is required');
     }
-    await authService.verifyEmail(token);
+    const message = await authService.verifyEmail(token);
 
     const acceptHeader = req.headers.accept || '';
     if (acceptHeader.includes('text/html') && !req.xhr) {
-      return res.redirect(`${env.FRONTEND_URL}/verify-email?status=success`);
+      return res.redirect(`${env.FRONTEND_URL}/login?verified=true`);
     }
 
     res.status(200).json(
-      formatResponse(true, null, 'Email verification successful. You can now log in.')
+      formatResponse(true, null, message || 'Email verification successful. You can now log in.')
     );
   } catch (error) {
     next(error);

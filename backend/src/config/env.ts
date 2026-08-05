@@ -11,12 +11,8 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_SECRET: z.string().min(8, 'Refresh token secret must be at least 8 characters'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
-  SMTP_HOST: z.string().optional().default(''),
-  SMTP_PORT: z.coerce.number().default(587),
-  SMTP_USER: z.string().optional().default(''),
-  SMTP_PASS: z.string().optional().default(''),
-  SMTP_FROM: z.string().default('Job Portal <noreply@jobportal.com>'),
   RESEND_API_KEY: z.string().optional().default(''),
+  RESEND_FROM: z.string().optional().default('Job Portal <onboarding@resend.dev>'),
   FRONTEND_URL: z.string().url('FRONTEND_URL must be a valid URL').optional(),
   MONGODB_URI: z.string().refine(val => val.startsWith('mongodb://') || val.startsWith('mongodb+srv://'), {
     message: 'Invalid MongoDB connection URI',
@@ -41,8 +37,12 @@ const envSchema = z.object({
       });
     }
 
-    if (!data.SMTP_HOST || !data.SMTP_USER || !data.SMTP_PASS) {
-      console.warn('⚠️ WARNING: SMTP_HOST, SMTP_USER, or SMTP_PASS is missing in production. Verification emails will fall back to mock transport.');
+    if (!data.RESEND_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['RESEND_API_KEY'],
+        message: 'FATAL: RESEND_API_KEY environment variable is REQUIRED in production environment',
+      });
     }
   }
 });
