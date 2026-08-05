@@ -4,21 +4,15 @@ process.env.CLOUDINARY_API_KEY = '';
 process.env.CLOUDINARY_API_SECRET = '';
 
 import { MongoMemoryServer } from 'mongodb-memory-server';
-
 import mongoose from 'mongoose';
 
-
-// Mock Nodemailer globally to avoid network dependencies or dynamic Ethereal setup delays
-jest.mock('nodemailer', () => ({
-  createTransport: jest.fn().mockReturnValue({
-    sendMail: jest.fn().mockResolvedValue({ messageId: 'mock-email-message-id-123' }),
-  }),
-  createTestAccount: jest.fn().mockResolvedValue({
-    smtp: { host: 'smtp.ethereal.email', port: 587, secure: false },
-    user: 'mockuser',
-    pass: 'mockpass',
-  }),
-  getTestMessageUrl: jest.fn().mockReturnValue('https://ethereal.email/preview/mock-preview-url'),
+// Mock Resend SDK globally for test suite
+jest.mock('resend', () => ({
+  Resend: jest.fn().mockImplementation(() => ({
+    emails: {
+      send: jest.fn().mockResolvedValue({ data: { id: 'mock-resend-id-123' }, error: null }),
+    },
+  })),
 }));
 
 let mongoServer: MongoMemoryServer;
