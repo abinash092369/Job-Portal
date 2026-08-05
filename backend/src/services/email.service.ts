@@ -1,34 +1,38 @@
-import dns from 'node:dns';
+import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
-// Custom DNS lookup function that forces family: 4 (IPv4) resolution
-const customIpv4Lookup = (hostname: string, options: any, callback: any) => {
-  const cb = typeof options === 'function' ? options : callback;
-  logger.info(`🔍 [DNS Lookup] Resolving host [${hostname}] with forced IPv4...`);
-  
-  dns.lookup(hostname, { family: 4, all: false }, (err, address, family) => {
-    if (err) {
-      logger.error(`❌ [DNS Lookup Failed] Host: ${hostname} -> Error: ${err.message}`);
-      return cb(err, address, family);
-    }
-    logger.info(`✅ [DNS Lookup Resolved] Host: ${hostname} -> IPv4 Address: ${address} (Family: IPv${family})`);
-    cb(null, address, family);
-  });
-};
-
 class EmailService {
+  private resend: Resend | null = null;
   private transporter: nodemailer.Transporter | null = null;
+
+  constructor() {
+    if (env.RESEND_API_KEY) {
+      logger.info('🚀 Resend SDK initialized for email delivery.');
+      this.resend = new Resend(env.RESEND_API_KEY);
+    }
+  }
+
+  private getResendInstance(): Resend | null {
+    if (this.resend) return this.resend;
+    if (env.RESEND_API_KEY) {
+      this.resend = new Resend(env.RESEND_API_KEY);
+      return this.resend;
+    }
+    return null;
+  }
 
   private async getTransporter(): Promise<nodemailer.Transporter> {
     if (this.transporter) {
       return this.transporter;
     }
 
-    // If SMTP host or user is not configured in environment, create an Ethereal mock account on-the-fly
     if (!env.SMTP_HOST || !env.SMTP_USER) {
-      logger.info('SMTP host or user not configured. Establishing dynamic Ethereal Mail mock SMTP...');
+      if (env.NODE_ENV === 'production' && !env.RESEND_API_KEY) {
+        throw new Error('FATAL: Neither RESEND_API_KEY nor SMTP credentials configured for production email delivery.');
+      }
+      logger.info('SMTP host or user not configured. Establishing dynamic Ethereal Mail mock SMTP for development...');
       try {
         const testAccount = await nodemailer.createTestAccount();
         this.transporter = nodemailer.createTransport({
@@ -43,122 +47,97 @@ class EmailService {
         logger.info(`Dynamic Ethereal SMTP established. User: ${testAccount.user}`);
         return this.transporter;
       } catch (err: any) {
-        logger.error(`Failed to establish dynamic Ethereal SMTP, creating dummy offline transport... Stack: ${err.stack || err}`);
-        // Fallback dummy transport to avoid crashing
+        logger.error(`Failed to establish dynamic Ethereal SMTP: ${err.message || err}`);
         this.transporter = nodemailer.createTransport({
-          jsonTransport: true
+          jsonTransport: true,
         });
         return this.transporter;
       }
     }
 
-    const smtpOptions: any = {
+    this.transporter = nodemailer.createTransport({
       host: env.SMTP_HOST,
       port: env.SMTP_PORT,
-      secure: env.SMTP_PORT === 465, // Secure connection for port 465 SSL/TLS
+      secure: env.SMTP_PORT === 465,
       auth: {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
       },
-      lookup: customIpv4Lookup,
-      family: 4, // Explicitly force IPv4
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 15000,
-    };
-    this.transporter = nodemailer.createTransport(smtpOptions);
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
+    } as any);
 
     return this.transporter;
   }
 
   async verifyConnection(): Promise<boolean> {
-    if (process.env.RESEND_API_KEY) {
-      logger.info('🚀 Resend HTTPS Web API transport detected & active (Port 443). Bypassing direct SMTP connection checks.');
+    const resend = this.getResendInstance();
+    if (resend) {
+      logger.info(`✅ [Resend SDK Active] Verification email dispatch will use official Resend SDK over HTTPS (Port 443).`);
       return true;
     }
 
-    if (!env.SMTP_HOST || !env.SMTP_USER) {
-      logger.info('ℹ️ SMTP_HOST or SMTP_USER not configured. Falling back to dynamic Ethereal mock transport.');
-      return true;
+    if (env.NODE_ENV === 'production' && (!env.SMTP_HOST || !env.SMTP_USER)) {
+      logger.error('❌ [Email Service Error] Neither RESEND_API_KEY nor SMTP credentials configured in production!');
+      return false;
     }
 
-    logger.info(`🔌 [SMTP Transport Init] Target Host: [${env.SMTP_HOST}], Port: [${env.SMTP_PORT}], Secure: [${env.SMTP_PORT === 465}]`);
     try {
       const transporter = await this.getTransporter();
-      logger.info(`⏳ [SMTP Verify] Initiating socket connection & authentication handshake with ${env.SMTP_HOST}:${env.SMTP_PORT}...`);
       await transporter.verify();
-      logger.info(`✅ [SMTP Authentication & Connection Success] Successfully connected and authenticated with ${env.SMTP_HOST}:${env.SMTP_PORT} over IPv4!`);
+      logger.info(`✅ [SMTP Connected] Verified local SMTP transport to ${env.SMTP_HOST}:${env.SMTP_PORT}`);
       return true;
     } catch (err: any) {
-      logger.error(`❌ [SMTP Verification Failed] Host: ${env.SMTP_HOST}:${env.SMTP_PORT}. Error: ${err.message}`);
-      logger.error(`💡 Tip: If Railway blocks SMTP ports (587/465), set RESEND_API_KEY on Railway dashboard to send emails reliably over HTTPS API (Port 443).`);
+      logger.error(`❌ [SMTP Verification Failed]: ${err.message}`);
       return false;
     }
   }
 
   async sendEmail(to: string, subject: string, html: string): Promise<void> {
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (resendApiKey) {
-      logger.info(`✉️ Sending email to ${to} via Resend HTTPS API...`);
-      try {
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: env.SMTP_FROM || 'onboarding@resend.dev',
-            to: [to],
-            subject,
-            html,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          logger.error(`❌ Resend API email delivery failed: ${response.status} ${errorText}`);
-          throw new Error(`Resend API delivery failed: ${errorText}`);
-        }
-
-        const resData = (await response.json()) as { id?: string };
-        logger.info(`✅ Email sent successfully to ${to} via Resend API. ID: ${resData.id}`);
-        return;
-      } catch (err: any) {
-        logger.error(`❌ Failed to send email via Resend API: ${err.message || err}`);
-        if (env.NODE_ENV === 'production') {
-          throw err;
-        }
+    const resend = this.getResendInstance();
+    if (resend) {
+      let fromAddress = env.SMTP_FROM;
+      if (!fromAddress || fromAddress.includes('noreply@jobportal.com')) {
+        fromAddress = 'Job Portal <onboarding@resend.dev>';
       }
+
+      logger.info(`✉️ [Resend SDK] Dispatching email to [${to}] from [${fromAddress}]...`);
+      const { data, error } = await resend.emails.send({
+        from: fromAddress,
+        to: [to],
+        subject,
+        html,
+      });
+
+      if (error) {
+        logger.error(`❌ [Resend API Error] ${error.name}: ${error.message}`);
+        throw new Error(`Resend email delivery failed: ${error.message}`);
+      }
+
+      logger.info(`✅ [Resend Success] Email delivered to ${to}. Message ID: ${data?.id}`);
+      return;
     }
 
+    // Fallback to local SMTP in development
     try {
       const transporter = await this.getTransporter();
-      logger.info(`✉️ Attempting email delivery to [${to}] via SMTP [${env.SMTP_HOST}:${env.SMTP_PORT}]...`);
       const info = await transporter.sendMail({
         from: env.SMTP_FROM,
         to,
         subject,
         html,
       });
-
-      logger.info(`✅ Email sent successfully to ${to}. Message ID: ${info.messageId}`);
-
-      const previewUrl = nodemailer.getTestMessageUrl(info);
-      if (previewUrl) {
-        logger.info(`✉️ [Mock Email] Preview URL: ${previewUrl}`);
-      }
+      logger.info(`✅ [SMTP Success] Delivered email to ${to}. Message ID: ${info.messageId}`);
     } catch (error: any) {
-      logger.error(`❌ Error encountered while sending email to ${to}: ${error.stack || error}`);
-      if (env.NODE_ENV === 'production') {
-        throw error;
-      }
+      logger.error(`❌ [SMTP Error] Failed to send email to ${to}: ${error.stack || error}`);
+      throw error;
     }
   }
 
   async sendVerificationEmail(to: string, token: string): Promise<void> {
     const verificationLink = `${env.FRONTEND_URL}/verify-email?token=${token}`;
-    logger.info(`✉️  [Dev Helper] Verification Link for ${to}: ${verificationLink}`);
+    logger.info(`✉️  Verification Link for ${to}: ${verificationLink}`);
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
         <h2 style="color: #1a202c; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Welcome to Job Portal!</h2>
@@ -177,7 +156,7 @@ class EmailService {
 
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
     const resetLink = `${env.FRONTEND_URL}/reset-password?token=${token}`;
-    logger.info(`✉️  [Dev Helper] Password Reset Link for ${to}: ${resetLink}`);
+    logger.info(`✉️  Password Reset Link for ${to}: ${resetLink}`);
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
         <h2 style="color: #1a202c; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Password Reset Request</h2>
@@ -192,7 +171,6 @@ class EmailService {
       </div>
     `;
     await this.sendEmail(to, 'Reset Your Password', html);
-
   }
 
   async sendApplicationStatusUpdate(to: string, jobTitle: string, status: string, candidateName: string = 'Candidate'): Promise<void> {

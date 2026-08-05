@@ -16,6 +16,7 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
   SMTP_FROM: z.string().default('Job Portal <noreply@jobportal.com>'),
+  RESEND_API_KEY: z.string().optional().default(''),
   FRONTEND_URL: z.string().url('FRONTEND_URL must be a valid URL').optional(),
   MONGODB_URI: z.string().refine(val => val.startsWith('mongodb://') || val.startsWith('mongodb+srv://'), {
     message: 'Invalid MongoDB connection URI',

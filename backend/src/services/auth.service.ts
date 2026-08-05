@@ -33,9 +33,8 @@ class AuthService {
         throw new BadRequestError('Failed to update unverified user profile');
       }
 
-      emailService.sendVerificationEmail(updatedUser.email, verificationToken).catch((err) => {
-        console.error(`Failed to send verification email to ${updatedUser.email}:`, err);
-      });
+      // Dispatch verification email - fails registration if email delivery fails
+      await emailService.sendVerificationEmail(updatedUser.email, verificationToken);
 
       const { passwordHash, ...userResponse } = updatedUser;
       return userResponse;
@@ -56,11 +55,8 @@ class AuthService {
       verificationTokenExpires,
     });
 
-    // Send verification email asynchronously so registration doesn't wait
-    emailService.sendVerificationEmail(newUser.email, verificationToken).catch((err) => {
-      // Log failure but do not crash registration
-      console.error(`Failed to send verification email to ${newUser.email}:`, err);
-    });
+    // Dispatch verification email - fails registration if email delivery fails
+    await emailService.sendVerificationEmail(newUser.email, verificationToken);
 
     const { passwordHash, ...userResponse } = newUser;
     return userResponse;
