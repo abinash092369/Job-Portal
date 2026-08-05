@@ -7,22 +7,14 @@ import * as authController from '../controllers/auth.controller';
 import {
   registerSchema,
   loginSchema,
-  verifyEmailSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
-  resendVerificationSchema,
 } from './auth.validation';
 
 const router = Router();
 
 router.post('/register', validate(registerSchema), authController.register);
-router.get('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
-router.post('/resend-verification', authRateLimiter, validate(resendVerificationSchema), authController.resendVerification);
 router.post('/login', authRateLimiter, validate(loginSchema), authController.login);
 router.post('/refresh', authController.refresh);
 router.post('/logout', authController.logout);
-router.post('/forgot-password', authRateLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
-router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 
 // Protected routes
 router.get('/me', authGuard, authController.getMe);

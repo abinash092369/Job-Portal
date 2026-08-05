@@ -2,7 +2,6 @@ import { applicationRepository } from '../repositories/in-memory/application.rep
 import { jobService } from './job.service';
 import { profileRepository } from '../repositories/in-memory/profile.repository.impl';
 import { userRepository } from '../repositories/in-memory/user.repository.impl';
-import { emailService } from './email.service';
 import { Application, ApplicationStatus, ScreeningAnswer } from '../types/application';
 import { NotFoundError, BadRequestError, ConflictError, ForbiddenError } from '../utils/errors';
 import { notificationService } from './notification.service';
@@ -113,17 +112,6 @@ class ApplicationService {
     ).catch((err) => {
       console.error('Failed to trigger status changed in-app notification:', err);
     });
-
-    // Trigger email notification
-    const candidateUser = await userRepository.findById(app.candidateId);
-    if (candidateUser) {
-      const candidateProfile = await profileRepository.getCandidateProfile(app.candidateId);
-      const candName = candidateProfile ? candidateProfile.name : undefined;
-      emailService.sendApplicationStatusUpdate(candidateUser.email, job.title, status, candName).catch((err) => {
-        // Log but do not block request
-        console.error('Failed to send status update email:', err);
-      });
-    }
 
     return updatedApp;
   }

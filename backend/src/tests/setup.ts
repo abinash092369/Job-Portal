@@ -6,15 +6,6 @@ process.env.CLOUDINARY_API_SECRET = '';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 
-// Mock Resend SDK globally for test suite
-jest.mock('resend', () => ({
-  Resend: jest.fn().mockImplementation(() => ({
-    emails: {
-      send: jest.fn().mockResolvedValue({ data: { id: 'mock-resend-id-123' }, error: null }),
-    },
-  })),
-}));
-
 let mongoServer: MongoMemoryServer;
 
 beforeAll(async () => {

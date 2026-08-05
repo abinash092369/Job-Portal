@@ -26,7 +26,6 @@
     "mongoose": "^9.9.1",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
-    "resend": "^6.18.1",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.19.0",
     "zod": "^4.4.3"

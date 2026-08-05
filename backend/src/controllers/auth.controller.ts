@@ -19,43 +19,7 @@ export async function register(req: Request, res: Response, next: NextFunction):
     const { email, password, role } = req.body;
     const user = await authService.register({ email, passwordPlain: password, role });
     res.status(201).json(
-      formatResponse(true, user, 'Registration successful. Please check your email to verify your account.')
-    );
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const token = (req.query.token as string) || req.body?.token;
-    if (!token) {
-      throw new BadRequestError('Verification token is required');
-    }
-    const message = await authService.verifyEmail(token);
-
-    const acceptHeader = req.headers.accept || '';
-    if (acceptHeader.includes('text/html') && !req.xhr) {
-      return res.redirect(`${env.FRONTEND_URL}/login?verified=true`);
-    }
-
-    res.status(200).json(
-      formatResponse(true, null, message || 'Email verification successful. You can now log in.')
-    );
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function resendVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const { email } = req.body;
-    if (!email) {
-      throw new BadRequestError('Email address is required');
-    }
-    await authService.resendVerificationEmail(email);
-    res.status(200).json(
-      formatResponse(true, null, 'If an unverified account exists for this email, a verification link has been sent.')
+      formatResponse(true, user, 'Registration successful. You can now log in.')
     );
   } catch (error) {
     next(error);
@@ -108,30 +72,6 @@ export async function logout(req: Request, res: Response, next: NextFunction): P
     res.clearCookie(COOKIE_NAME, clearOptions);
     res.status(200).json(
       formatResponse(true, null, 'Logout successful')
-    );
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const { email } = req.body;
-    await authService.forgotPassword(email);
-    res.status(200).json(
-      formatResponse(true, null, 'If the email matches an account, a password reset link has been sent.')
-    );
-  } catch (error) {
-    next(error);
-  }
-}
-
-export async function resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const { token, password } = req.body;
-    await authService.resetPassword(token, password);
-    res.status(200).json(
-      formatResponse(true, null, 'Password has been reset successfully. You can now log in.')
     );
   } catch (error) {
     next(error);

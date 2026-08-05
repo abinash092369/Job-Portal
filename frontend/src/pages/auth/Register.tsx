@@ -38,8 +38,8 @@ export const Register: React.FC = () => {
     try {
       const { email, password, role } = data;
       await api.post('/auth/register', { email, password, role });
-      addToast('Registration successful! Please verify your email.', 'success');
-      navigate('/verify-email', { state: { email } });
+      addToast('Registration successful! Please log in.', 'success');
+      navigate('/login');
     } catch (error: any) {
       const serverMessage = error.response?.data?.message || 'Registration failed. Email may already be in use.';
       addToast(serverMessage, 'error');

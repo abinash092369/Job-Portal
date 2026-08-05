@@ -11,8 +11,6 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_SECRET: z.string().min(8, 'Refresh token secret must be at least 8 characters'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
-  RESEND_API_KEY: z.string().optional().default(''),
-  RESEND_FROM: z.string().optional().default('Job Portal <onboarding@resend.dev>'),
   FRONTEND_URL: z.string().url('FRONTEND_URL must be a valid URL').optional(),
   MONGODB_URI: z.string().refine(val => val.startsWith('mongodb://') || val.startsWith('mongodb+srv://'), {
     message: 'Invalid MongoDB connection URI',
@@ -34,14 +32,6 @@ const envSchema = z.object({
         code: z.ZodIssueCode.custom,
         path: ['FRONTEND_URL'],
         message: `FATAL: FRONTEND_URL cannot contain localhost or 127.0.0.1 in production! Received: ${data.FRONTEND_URL}`,
-      });
-    }
-
-    if (!data.RESEND_API_KEY) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['RESEND_API_KEY'],
-        message: 'FATAL: RESEND_API_KEY environment variable is REQUIRED in production environment',
       });
     }
   }

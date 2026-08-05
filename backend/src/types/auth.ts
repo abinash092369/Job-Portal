@@ -5,12 +5,7 @@ export interface User {
   email: string;
   passwordHash: string;
   role: UserRole;
-  isVerified: boolean;
   isSuspended?: boolean;
-  verificationToken?: string;
-  verificationTokenExpires?: Date;
-  passwordResetToken?: string;
-  passwordResetExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
