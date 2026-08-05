@@ -26,8 +26,6 @@ app.use(
 // 2. CORS - Configured production and deployment origins
 const allowedOrigins = [
   env.FRONTEND_URL.replace(/\/$/, ''),
-  'https://job-portal-abinash.netlify.app',
-  'https://job-portal-abinash-app.netlify.app',
 ];
 
 app.use(

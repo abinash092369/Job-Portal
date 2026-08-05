@@ -15,6 +15,7 @@ async function startServer() {
   // 2. Start Listening
   const server = app.listen(env.PORT, () => {
     logger.info(`🚀 Server running in [${env.NODE_ENV}] mode on port [${env.PORT}]`);
+    logger.info(`🌐 Configured FRONTEND_URL: [${env.FRONTEND_URL}]`);
     logger.info(`📖 Swagger UI API Docs available at http://localhost:${env.PORT}/docs`);
   });
 
