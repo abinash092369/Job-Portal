@@ -1,6 +1,22 @@
+import dns from 'node:dns';
 import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
+
+// Custom DNS lookup function that forces family: 4 (IPv4) resolution
+const customIpv4Lookup = (hostname: string, options: any, callback: any) => {
+  const cb = typeof options === 'function' ? options : callback;
+  logger.info(`🔍 [DNS Lookup] Resolving host [${hostname}] with forced IPv4...`);
+  
+  dns.lookup(hostname, { family: 4, all: false }, (err, address, family) => {
+    if (err) {
+      logger.error(`❌ [DNS Lookup Failed] Host: ${hostname} -> Error: ${err.message}`);
+      return cb(err, address, family);
+    }
+    logger.info(`✅ [DNS Lookup Resolved] Host: ${hostname} -> IPv4 Address: ${address} (Family: IPv${family})`);
+    cb(null, address, family);
+  });
+};
 
 class EmailService {
   private transporter: nodemailer.Transporter | null = null;
@@ -39,15 +55,16 @@ class EmailService {
     const smtpOptions: any = {
       host: env.SMTP_HOST,
       port: env.SMTP_PORT,
-      secure: env.SMTP_PORT === 465, // Secure connection for standard secure port
+      secure: env.SMTP_PORT === 465, // Secure connection for port 465 SSL/TLS
       auth: {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
       },
-      family: 4, // Force IPv4 to prevent Railway connect ENETUNREACH IPv6 timeout
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
+      lookup: customIpv4Lookup,
+      family: 4, // Explicitly force IPv4
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 15000,
     };
     this.transporter = nodemailer.createTransport(smtpOptions);
 
@@ -55,20 +72,69 @@ class EmailService {
   }
 
   async verifyConnection(): Promise<boolean> {
+    if (process.env.RESEND_API_KEY) {
+      logger.info('🚀 Resend HTTPS Web API transport detected & active (Port 443). Bypassing direct SMTP connection checks.');
+      return true;
+    }
+
+    if (!env.SMTP_HOST || !env.SMTP_USER) {
+      logger.info('ℹ️ SMTP_HOST or SMTP_USER not configured. Falling back to dynamic Ethereal mock transport.');
+      return true;
+    }
+
+    logger.info(`🔌 [SMTP Transport Init] Target Host: [${env.SMTP_HOST}], Port: [${env.SMTP_PORT}], Secure: [${env.SMTP_PORT === 465}]`);
     try {
       const transporter = await this.getTransporter();
+      logger.info(`⏳ [SMTP Verify] Initiating socket connection & authentication handshake with ${env.SMTP_HOST}:${env.SMTP_PORT}...`);
       await transporter.verify();
-      logger.info(`✅ SMTP Transport verified successfully (Host: ${env.SMTP_HOST || 'mock'}, Port: ${env.SMTP_PORT || 'mock'})`);
+      logger.info(`✅ [SMTP Authentication & Connection Success] Successfully connected and authenticated with ${env.SMTP_HOST}:${env.SMTP_PORT} over IPv4!`);
       return true;
     } catch (err: any) {
-      logger.error(`❌ SMTP Transport verification failed: ${err.message || err}`);
+      logger.error(`❌ [SMTP Verification Failed] Host: ${env.SMTP_HOST}:${env.SMTP_PORT}. Error: ${err.message}`);
+      logger.error(`💡 Tip: If Railway blocks SMTP ports (587/465), set RESEND_API_KEY on Railway dashboard to send emails reliably over HTTPS API (Port 443).`);
       return false;
     }
   }
 
   async sendEmail(to: string, subject: string, html: string): Promise<void> {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey) {
+      logger.info(`✉️ Sending email to ${to} via Resend HTTPS API...`);
+      try {
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: env.SMTP_FROM || 'onboarding@resend.dev',
+            to: [to],
+            subject,
+            html,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          logger.error(`❌ Resend API email delivery failed: ${response.status} ${errorText}`);
+          throw new Error(`Resend API delivery failed: ${errorText}`);
+        }
+
+        const resData = (await response.json()) as { id?: string };
+        logger.info(`✅ Email sent successfully to ${to} via Resend API. ID: ${resData.id}`);
+        return;
+      } catch (err: any) {
+        logger.error(`❌ Failed to send email via Resend API: ${err.message || err}`);
+        if (env.NODE_ENV === 'production') {
+          throw err;
+        }
+      }
+    }
+
     try {
       const transporter = await this.getTransporter();
+      logger.info(`✉️ Attempting email delivery to [${to}] via SMTP [${env.SMTP_HOST}:${env.SMTP_PORT}]...`);
       const info = await transporter.sendMail({
         from: env.SMTP_FROM,
         to,
@@ -76,15 +142,14 @@ class EmailService {
         html,
       });
 
-      logger.info(`Email sent successfully to ${to}. Message ID: ${info.messageId}`);
+      logger.info(`✅ Email sent successfully to ${to}. Message ID: ${info.messageId}`);
 
-      // Log Ethereal preview link if generated
       const previewUrl = nodemailer.getTestMessageUrl(info);
       if (previewUrl) {
         logger.info(`✉️ [Mock Email] Preview URL: ${previewUrl}`);
       }
     } catch (error: any) {
-      logger.error(`Error encountered while sending email to ${to}: ${error.stack || error}`);
+      logger.error(`❌ Error encountered while sending email to ${to}: ${error.stack || error}`);
       if (env.NODE_ENV === 'production') {
         throw error;
       }
