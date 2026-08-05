@@ -7,23 +7,21 @@ describe('RBAC Authorization Rejections', () => {
   let employerToken: string;
 
   beforeAll(async () => {
-    // 1. Create Verified Candidate
-    const candidate = await authService.register({
+    // 1. Create Candidate
+    await authService.register({
       email: 'cand-rbac@example.com',
       passwordPlain: 'password123',
       role: 'candidate',
     });
-    await authService.verifyEmail(candidate.verificationToken!);
     const candLogin = await authService.login('cand-rbac@example.com', 'password123');
     candidateToken = candLogin.accessToken;
 
-    // 2. Create Verified Employer
-    const employer = await authService.register({
+    // 2. Create Employer
+    await authService.register({
       email: 'emp-rbac@example.com',
       passwordPlain: 'password123',
       role: 'employer',
     });
-    await authService.verifyEmail(employer.verificationToken!);
     const empLogin = await authService.login('emp-rbac@example.com', 'password123');
     employerToken = empLogin.accessToken;
   });

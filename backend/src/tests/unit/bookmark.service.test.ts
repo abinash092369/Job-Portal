@@ -16,7 +16,6 @@ describe('BookmarkService', () => {
       email: 'cand-bookmark-test@example.com',
       passwordHash: 'dummy',
       role: 'candidate',
-      isVerified: true,
     });
     candidateId = candidate.id;
 
@@ -24,7 +23,6 @@ describe('BookmarkService', () => {
       email: 'emp-bookmark-test@example.com',
       passwordHash: 'dummy',
       role: 'employer',
-      isVerified: true,
     });
     employerId = employer.id;
 

@@ -10,12 +10,11 @@ describe('Job Bookmarks Controller Integration', () => {
 
   beforeEach(async () => {
     // 1. Candidate Setup
-    const cand = await authService.register({
+    await authService.register({
       email: 'cand.bookmark-test@example.com',
       passwordPlain: 'password123',
       role: 'candidate',
     });
-    await authService.verifyEmail(cand.verificationToken!);
     const candLogin = await authService.login('cand.bookmark-test@example.com', 'password123');
     candidateToken = candLogin.accessToken;
 
@@ -25,7 +24,6 @@ describe('Job Bookmarks Controller Integration', () => {
       passwordPlain: 'password123',
       role: 'employer',
     });
-    await authService.verifyEmail(emp.verificationToken!);
     const empLogin = await authService.login('emp.bookmark-test@example.com', 'password123');
     employerToken = empLogin.accessToken;
 

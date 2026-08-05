@@ -18,7 +18,6 @@ describe('Admin Controller Integration', () => {
       email: 'admin.integration@example.com',
       passwordHash: await bcrypt.hash('adminpass123', 12),
       role: 'admin',
-      isVerified: true,
     });
 
     const adminLogin = await authService.login('admin.integration@example.com', 'adminpass123');
@@ -29,7 +28,6 @@ describe('Admin Controller Integration', () => {
       email: 'cand.admin-test@example.com',
       passwordHash: 'dummyhash',
       role: 'candidate',
-      isVerified: true,
     });
 
     // 3. Create sample employer
@@ -37,7 +35,6 @@ describe('Admin Controller Integration', () => {
       email: 'emp.admin-test@example.com',
       passwordHash: 'dummyhash',
       role: 'employer',
-      isVerified: true,
     });
 
     // 4. Create sample job

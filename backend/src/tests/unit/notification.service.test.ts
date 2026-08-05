@@ -12,7 +12,6 @@ describe('NotificationService', () => {
       email: 'notif-user@example.com',
       passwordHash: 'dummy',
       role: 'candidate',
-      isVerified: true,
     });
     userId = user.id;
 
@@ -20,7 +19,6 @@ describe('NotificationService', () => {
       email: 'other-notif@example.com',
       passwordHash: 'dummy',
       role: 'candidate',
-      isVerified: true,
     });
     otherUserId = otherUser.id;
   });

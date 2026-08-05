@@ -12,7 +12,6 @@ describe('JobService Auto-Expiration Logic', () => {
       email: 'employer.job.unit@example.com',
       passwordHash: 'dummyhash',
       role: 'employer',
-      isVerified: true,
     });
     employerId = employerUser.id;
   });

@@ -15,7 +15,6 @@ describe('AdminService', () => {
       email: 'cand-admin-test@example.com',
       passwordHash: 'dummy',
       role: 'candidate',
-      isVerified: true,
     });
     mockUserId = candidate.id;
 
@@ -23,7 +22,6 @@ describe('AdminService', () => {
       email: 'emp-admin-test@example.com',
       passwordHash: 'dummy',
       role: 'employer',
-      isVerified: true,
     });
     mockEmployerId = employer.id;
 

@@ -15,7 +15,6 @@ describe('ApplicationService', () => {
       email: 'employer.app.unit@example.com',
       passwordHash: 'dummyhash',
       role: 'employer',
-      isVerified: true,
     });
     employerId = employerUser.id;
 
@@ -24,7 +23,6 @@ describe('ApplicationService', () => {
       email: 'candidate.app.unit@example.com',
       passwordHash: 'dummyhash',
       role: 'candidate',
-      isVerified: true,
     });
     candidateId = candidateUser.id;
 

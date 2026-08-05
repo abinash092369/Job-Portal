@@ -9,23 +9,21 @@ describe('Job CRUD and Ownership Integration', () => {
   let createdJobId: string;
 
   beforeAll(async () => {
-    // 1. Create Verified Employer A
-    const empA = await authService.register({
+    // 1. Create Employer A
+    await authService.register({
       email: 'empa-jobs@example.com',
       passwordPlain: 'password123',
       role: 'employer',
     });
-    await authService.verifyEmail(empA.verificationToken!);
     const loginA = await authService.login('empa-jobs@example.com', 'password123');
     employerAToken = loginA.accessToken;
 
-    // 2. Create Verified Employer B
-    const empB = await authService.register({
+    // 2. Create Employer B
+    await authService.register({
       email: 'empb-jobs@example.com',
       passwordPlain: 'password123',
       role: 'employer',
     });
-    await authService.verifyEmail(empB.verificationToken!);
     const loginB = await authService.login('empb-jobs@example.com', 'password123');
     employerBToken = loginB.accessToken;
 

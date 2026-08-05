@@ -11,7 +11,6 @@ describe('DashboardService - Profile Completeness', () => {
       email: 'jane.completeness@example.com',
       passwordHash: 'dummyhash',
       role: 'candidate',
-      isVerified: true,
     });
     candidateId = user.id;
   });

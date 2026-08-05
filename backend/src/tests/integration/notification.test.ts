@@ -15,7 +15,6 @@ describe('Notification Controller Integration', () => {
       passwordPlain: 'password123',
       role: 'candidate',
     });
-    await authService.verifyEmail(cand.verificationToken!);
     const candLogin = await authService.login('cand.notif-test@example.com', 'password123');
     candidateToken = candLogin.accessToken;
     candidateId = cand.id;

@@ -9,12 +9,11 @@ describe('Profile Controller Integration', () => {
 
   beforeEach(async () => {
     // 1. Candidate Setup
-    const cand = await authService.register({
+    await authService.register({
       email: 'cand.profile-test@example.com',
       passwordPlain: 'password123',
       role: 'candidate',
     });
-    await authService.verifyEmail(cand.verificationToken!);
     const candLogin = await authService.login('cand.profile-test@example.com', 'password123');
     candidateToken = candLogin.accessToken;
 
@@ -25,7 +24,6 @@ describe('Profile Controller Integration', () => {
       role: 'employer',
     });
     employerId = emp.id;
-    await authService.verifyEmail(emp.verificationToken!);
     const empLogin = await authService.login('emp.profile-test@example.com', 'password123');
     employerToken = empLogin.accessToken;
   });

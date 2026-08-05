@@ -11,13 +11,12 @@ describe('Job Application Flow Integration', () => {
   let applicationId: string;
 
   beforeAll(async () => {
-    // 1. Setup Verified Employer
-    const emp = await authService.register({
+    // 1. Setup Employer
+    await authService.register({
       email: 'employer-app@example.com',
       passwordPlain: 'password123',
       role: 'employer',
     });
-    await authService.verifyEmail(emp.verificationToken!);
     const empLogin = await authService.login('employer-app@example.com', 'password123');
     employerToken = empLogin.accessToken;
 
@@ -42,13 +41,12 @@ describe('Job Application Flow Integration', () => {
       .patch(`/api/v1/jobs/${jobId}/publish`)
       .set('Authorization', `Bearer ${employerToken}`);
 
-    // 2. Setup Verified Candidate
+    // 2. Setup Candidate
     const cand = await authService.register({
       email: 'candidate-app@example.com',
       passwordPlain: 'password123',
       role: 'candidate',
     });
-    await authService.verifyEmail(cand.verificationToken!);
     const candLogin = await authService.login('candidate-app@example.com', 'password123');
     candidateToken = candLogin.accessToken;
     candidateId = cand.id;

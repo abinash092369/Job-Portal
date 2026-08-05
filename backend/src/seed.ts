@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 import { env } from './config/env';
 import { connectDatabase, disconnectDatabase } from './config/database';
-import { UserModel, EmailVerificationTokenModel, PasswordResetTokenModel } from './models/user.model';
+import { UserModel } from './models/user.model';
 import { CandidateProfileModel, EmployerProfileModel } from './models/profile.model';
 import { JobModel } from './models/job.model';
 import { ApplicationModel } from './models/application.model';
@@ -67,8 +67,6 @@ async function runSeed() {
       BookmarkModel.deleteMany({}),
       NotificationModel.deleteMany({}),
       RefreshTokenModel.deleteMany({}),
-      EmailVerificationTokenModel.deleteMany({}),
-      PasswordResetTokenModel.deleteMany({}),
     ]);
     console.log('✅ Cleaned database successfully.');
 
@@ -84,7 +82,6 @@ async function runSeed() {
         email: 'admin1@jobportal.com',
         passwordHash,
         role: 'admin',
-        isVerified: true,
         isSuspended: false,
         deletedAt: null,
       },
@@ -92,7 +89,6 @@ async function runSeed() {
         email: 'admin2@jobportal.com',
         passwordHash,
         role: 'admin',
-        isVerified: true,
         isSuspended: false,
         deletedAt: null,
       },
@@ -108,7 +104,6 @@ async function runSeed() {
         email,
         passwordHash,
         role: 'employer',
-        isVerified: true,
         isSuspended: false,
         deletedAt: null,
       });
@@ -124,7 +119,6 @@ async function runSeed() {
         website: `https://${companyName.toLowerCase().replace(/\s+/g, '')}.com`,
         industry: i % 2 === 0 ? 'Technology' : 'Finance',
         companySize: i % 2 === 0 ? '11-50 employees' : '501-1000 employees',
-        isVerified: i % 2 === 0, // Mark some as verified
       });
       await employerProfile.save();
     }
@@ -139,7 +133,6 @@ async function runSeed() {
         email,
         passwordHash,
         role: 'candidate',
-        isVerified: true,
         isSuspended: false,
         deletedAt: null,
       });
