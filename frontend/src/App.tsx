@@ -102,14 +102,7 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/verify-email"
-            element={
-              <ProtectedRoute guestOnly>
-                <VerifyEmail />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
           {/* Candidate-Only Routes */}
           <Route

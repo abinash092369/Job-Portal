@@ -91,16 +91,24 @@ class AuthService {
   }
 
   async verifyEmail(token: string): Promise<void> {
-    const user = await userRepository.findByVerificationToken(token);
-    if (!user) {
-      throw new BadRequestError('Invalid or expired email verification token');
+    if (!token) {
+      throw new BadRequestError('Verification token is required');
+    }
+    const cleanToken = token.trim();
+    const user = await userRepository.findByVerificationToken(cleanToken);
+
+    if (user) {
+      if (!user.isVerified) {
+        await userRepository.update(user.id, {
+          isVerified: true,
+          verificationToken: undefined,
+          verificationTokenExpires: undefined,
+        });
+      }
+      return;
     }
 
-    await userRepository.update(user.id, {
-      isVerified: true,
-      verificationToken: undefined,
-      verificationTokenExpires: undefined,
-    });
+    throw new BadRequestError('Invalid or expired email verification token');
   }
 
   async login(email: string, passwordPlain: string): Promise<{ user: Omit<User, 'passwordHash'>; accessToken: string; refreshToken: string }> {

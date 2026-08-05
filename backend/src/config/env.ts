@@ -39,6 +39,10 @@ const envSchema = z.object({
         message: `FATAL: FRONTEND_URL cannot contain localhost or 127.0.0.1 in production! Received: ${data.FRONTEND_URL}`,
       });
     }
+
+    if (!data.SMTP_HOST || !data.SMTP_USER || !data.SMTP_PASS) {
+      console.warn('⚠️ WARNING: SMTP_HOST, SMTP_USER, or SMTP_PASS is missing in production. Verification emails will fall back to mock transport.');
+    }
   }
 });
 

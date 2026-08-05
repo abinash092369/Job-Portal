@@ -20,7 +20,8 @@ export const VerifyEmail: React.FC = () => {
       setVerifying(true);
       setStatus('pending');
       try {
-        await api.get(`/auth/verify-email?token=${token}`);
+        const cleanToken = token.trim();
+        await api.get(`/auth/verify-email?token=${encodeURIComponent(cleanToken)}`);
         setStatus('success');
         addToast('Email verified successfully! You can now log in.', 'success');
       } catch (error: any) {

@@ -36,7 +36,7 @@ class EmailService {
       }
     }
 
-    this.transporter = nodemailer.createTransport({
+    const smtpOptions: any = {
       host: env.SMTP_HOST,
       port: env.SMTP_PORT,
       secure: env.SMTP_PORT === 465, // Secure connection for standard secure port
@@ -44,9 +44,26 @@ class EmailService {
         user: env.SMTP_USER,
         pass: env.SMTP_PASS,
       },
-    });
+      family: 4, // Force IPv4 to prevent Railway connect ENETUNREACH IPv6 timeout
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
+    };
+    this.transporter = nodemailer.createTransport(smtpOptions);
 
     return this.transporter;
+  }
+
+  async verifyConnection(): Promise<boolean> {
+    try {
+      const transporter = await this.getTransporter();
+      await transporter.verify();
+      logger.info(`✅ SMTP Transport verified successfully (Host: ${env.SMTP_HOST || 'mock'}, Port: ${env.SMTP_PORT || 'mock'})`);
+      return true;
+    } catch (err: any) {
+      logger.error(`❌ SMTP Transport verification failed: ${err.message || err}`);
+      return false;
+    }
   }
 
   async sendEmail(to: string, subject: string, html: string): Promise<void> {
