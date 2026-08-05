@@ -12,6 +12,9 @@ import routes from './routes';
 
 const app = express();
 
+// Enable trust proxy for Railway / reverse proxy setup (MUST be set before rate limiting or other middleware)
+app.set('trust proxy', 1);
+
 // Security headers
 app.use(helmet());
 

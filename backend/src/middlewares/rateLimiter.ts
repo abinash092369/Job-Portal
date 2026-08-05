@@ -5,6 +5,7 @@ export const globalLimiter = rateLimit({
   max: 200, // limit each IP to 200 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false, xForwardedForHeader: false },
   message: {
     success: false,
     data: null,
@@ -17,6 +18,7 @@ export const loginLimiter = rateLimit({
   max: 5, // strict limit: 5 login attempts per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false, xForwardedForHeader: false },
   message: {
     success: false,
     data: null,
