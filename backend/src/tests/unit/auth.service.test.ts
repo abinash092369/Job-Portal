@@ -28,11 +28,12 @@ describe('AuthService', () => {
   });
 
   test('should throw ConflictError if registering an existing email', async () => {
-    await authService.register({
+    const user = await authService.register({
       email: 'duplicate@example.com',
       passwordPlain: 'password',
       role: 'candidate',
     });
+    await authService.verifyEmail(user.verificationToken!);
 
     await expect(
       authService.register({
