@@ -3,6 +3,27 @@ import { logger } from './logger';
 
 let isInitialized = false;
 
+export const formatPrivateKey = (key?: string): string | undefined => {
+  if (!key) return undefined;
+  let formatted = key.trim();
+
+  // Strip outer double or single quotes if present
+  if (
+    (formatted.startsWith('"') && formatted.endsWith('"')) ||
+    (formatted.startsWith("'") && formatted.endsWith("'"))
+  ) {
+    formatted = formatted.slice(1, -1).trim();
+  }
+
+  // Replace escaped \n with actual newlines
+  formatted = formatted.replace(/\\n/g, '\n');
+
+  // Remove carriage returns
+  formatted = formatted.replace(/\r/g, '');
+
+  return formatted.trim();
+};
+
 export const initFirebaseAdmin = (): App | null => {
   if (isInitialized || getApps().length > 0) {
     isInitialized = true;
@@ -11,7 +32,7 @@ export const initFirebaseAdmin = (): App | null => {
 
   const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const privateKey = formatPrivateKey(process.env.FIREBASE_PRIVATE_KEY);
 
   const hasProjectId = Boolean(projectId);
   const hasClientEmail = Boolean(clientEmail);

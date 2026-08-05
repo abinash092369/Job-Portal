@@ -65,6 +65,13 @@ describe('Backend Startup & Railway Proxy Configuration Tests', () => {
 
       process.env.FIREBASE_CLIENT_EMAIL = origEmail;
     });
+
+    it('should format private keys wrapped in double quotes and containing escaped newlines', () => {
+      const { formatPrivateKey } = require('../config/firebase-admin');
+      const input = '"-----BEGIN PRIVATE KEY-----\\nMIIEvQI\\n-----END PRIVATE KEY-----\\n"';
+      const output = formatPrivateKey(input);
+      expect(output).toBe('-----BEGIN PRIVATE KEY-----\nMIIEvQI\n-----END PRIVATE KEY-----');
+    });
   });
 
   describe('4. Health & Authentication Endpoints', () => {
