@@ -1,75 +1,39 @@
 import mongoose from 'mongoose';
-import { env } from './env';
-import { logger } from '../utils/logger';
+import { config } from './index';
+import { logger } from './logger';
 
-const RETRY_INTERVAL_MS = 5000;
-const MAX_RETRIES = 5;
+export const connectDatabase = async (retries = 5, delayMs = 3000): Promise<void> => {
+  const options = {
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+  };
 
-/**
- * PRODUCTION-READY MONGOOSE CONNECTION SETUP
- * 
- * Connection Options:
- * - maxPoolSize: Default is 100 in Mongoose/MongoDB driver. We explicitly set it.
- *   For a long-running server, a pool size of 10-50 is typical depending on load.
- *   NOTE FOR SERVERLESS DEPLOYMENTS (e.g., AWS Lambda, Vercel Functions):
- *   - In serverless environments, each invocation runs in a short-lived, isolated container.
- *   - The driver cannot reuse the pool across distinct concurrent invocations.
- *   - Therefore, maxPoolSize should be set very low (e.g., 1 or 2) to avoid exhausting database connections.
- *   - Also, we must check if an active connection already exists before calling `mongoose.connect`.
- */
-const mongooseOptions: mongoose.ConnectOptions = {
-  maxPoolSize: env.NODE_ENV === 'production' ? 50 : 10,
-  connectTimeoutMS: 10000,
-  socketTimeoutMS: 45000,
-};
-
-export async function connectDatabase(): Promise<void> {
-  let attempt = 1;
-  const dbUri = env.MONGODB_URI;
-
-  while (attempt <= MAX_RETRIES) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      logger.info(`Connecting to MongoDB... (Attempt ${attempt}/${MAX_RETRIES})`);
-      
-      // If we are in a serverless environment, prevent re-connecting if already connected
-      if (mongoose.connection.readyState === 1) {
-        logger.info('Using existing MongoDB connection');
-        return;
-      }
+      const conn = await mongoose.connect(config.mongodbUri, options);
+      logger.info(`MongoDB Connected: ${conn.connection.host}`);
 
-      await mongoose.connect(dbUri, mongooseOptions);
-      logger.info('📡 Successfully connected to MongoDB');
+      mongoose.connection.on('error', (err) => {
+        logger.error(`MongoDB Connection Error: ${err.message}`);
+      });
+
+      mongoose.connection.on('disconnected', () => {
+        logger.warn('MongoDB Disconnected. Attempting to reconnect...');
+      });
+
       return;
-    } catch (error: any) {
-      logger.error(`❌ Failed to connect to MongoDB on attempt ${attempt}: ${error.stack || error.message}`);
-      attempt++;
-      if (attempt <= MAX_RETRIES) {
-        logger.info(`Retrying database connection in ${RETRY_INTERVAL_MS / 1000}s...`);
-        await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL_MS));
+    } catch (error) {
+      logger.error(
+        `MongoDB Connection Attempt ${attempt}/${retries} failed: ${(error as Error).message}`
+      );
+      if (attempt < retries) {
+        logger.info(`Retrying MongoDB connection in ${delayMs / 1000}s...`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      } else {
+        logger.error('Could not connect to MongoDB after max retries. Exiting.');
+        process.exit(1);
       }
     }
   }
-
-  logger.error('❌ Max retries reached. Could not connect to MongoDB. Exiting...');
-  process.exit(1);
-}
-
-export async function disconnectDatabase(): Promise<void> {
-  if (mongoose.connection.readyState !== 0) {
-    logger.info('Closing MongoDB connection...');
-    await mongoose.disconnect();
-    logger.info('🔌 MongoDB connection closed gracefully');
-  }
-}
-
-// Listen for process signals to gracefully shut down connection (only for long-running servers)
-if (process.env.NODE_ENV !== 'test') {
-  const shutdown = async (signal: string) => {
-    logger.info(`Received ${signal}. Starting graceful shutdown...`);
-    await disconnectDatabase();
-    process.exit(0);
-  };
-
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-}
+};

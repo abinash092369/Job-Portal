@@ -1,23 +1,44 @@
 import jwt from 'jsonwebtoken';
-import { env } from '../config/env';
-import { TokenPayload } from '../types/auth';
+import { config } from '../config';
+import { AuthUser } from '../types';
 
-export function signAccessToken(payload: TokenPayload): string {
-  return jwt.sign(payload as any, env.JWT_ACCESS_SECRET, {
-    expiresIn: env.JWT_ACCESS_EXPIRY,
-  } as any);
-}
+export const generateAccessToken = (user: AuthUser): string => {
+  return jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+    },
+    config.jwtAccessSecret,
+    { expiresIn: '15m' }
+  );
+};
 
-export function signRefreshToken(payload: TokenPayload): string {
-  return jwt.sign(payload as any, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRY,
-  } as any);
-}
+export const generateRefreshToken = (user: AuthUser): string => {
+  return jwt.sign(
+    {
+      id: user.id,
+    },
+    config.jwtRefreshSecret,
+    { expiresIn: '7d' }
+  );
+};
 
-export function verifyAccessToken(token: string): TokenPayload {
-  return jwt.verify(token, env.JWT_ACCESS_SECRET) as TokenPayload;
-}
+export const verifyAccessToken = (token: string): AuthUser | null => {
+  try {
+    const decoded = jwt.verify(token, config.jwtAccessSecret) as AuthUser;
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+};
 
-export function verifyRefreshToken(token: string): TokenPayload {
-  return jwt.verify(token, env.JWT_REFRESH_SECRET) as TokenPayload;
-}
+export const verifyRefreshToken = (token: string): { id: string } | null => {
+  try {
+    const decoded = jwt.verify(token, config.jwtRefreshSecret) as { id: string };
+    return decoded;
+  } catch (error) {
+    return null;
+  }
+};

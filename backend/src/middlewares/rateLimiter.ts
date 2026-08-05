@@ -1,32 +1,25 @@
 import rateLimit from 'express-rate-limit';
-import { formatResponse } from '../utils/response';
 
-// Global rate limiter applied to all endpoints
-export const globalRateLimiter = rateLimit({
+export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  message: formatResponse(false, null, 'Too many requests from this IP, please try again after 15 minutes', null),
-  statusCode: 429,
-});
-
-// Stricter rate limiter for sensitive authentication endpoints (e.g., login, forgot password)
-export const authRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  max: 200, // limit each IP to 200 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
-  message: formatResponse(false, null, 'Too many login or sensitive auth attempts, please try again after 15 minutes', null),
-  statusCode: 429,
+  message: {
+    success: false,
+    data: null,
+    message: 'Too many requests from this IP, please try again after 15 minutes',
+  },
 });
 
-// Specific rate limiter for public search and listing routes
-export const jobSearchRateLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
-  max: 30, // Limit each IP to 30 requests per minute
+export const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // strict limit: 5 login attempts per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
-  message: formatResponse(false, null, 'Too many search requests from this IP, please try again after 1 minute', null),
-  statusCode: 429,
+  message: {
+    success: false,
+    data: null,
+    message: 'Too many login attempts. Please try again after 15 minutes',
+  },
 });

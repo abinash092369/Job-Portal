@@ -1,63 +1,65 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
-import authRoutes from './auth.routes';
-import profileRoutes from './profile.routes';
-import jobRoutes from './job.routes';
-import applicationRoutes from './application.routes';
-import dashboardRoutes from './dashboard.routes';
-import notificationRoutes from './notification.routes';
-import adminRoutes from './admin.routes';
+import authRoutes from './authRoutes';
+import profileRoutes from './profileRoutes';
+import jobRoutes from './jobRoutes';
+import applicationRoutes from './applicationRoutes';
+import dashboardRoutes from './dashboardRoutes';
+import notificationRoutes from './notificationRoutes';
+import adminRoutes from './adminRoutes';
+import swaggerRoutes from './swaggerRoutes';
 
 const router = Router();
 
-// API Health Check
-router.get('/health', async (req, res) => {
-  const isDbConnected = mongoose.connection.readyState === 1;
-  let dbStatus = 'disconnected';
-  
-  if (isDbConnected) {
-    try {
-      // Ping the admin database to verify active connection
-      await mongoose.connection.db!.admin().ping();
-      dbStatus = 'connected';
-    } catch (err) {
-      dbStatus = 'unhealthy';
+// Deep Health Check Endpoint
+router.get('/health', async (_req, res) => {
+  try {
+    const isConnected = mongoose.connection.readyState === 1;
+    if (!isConnected || !mongoose.connection.db) {
+      return res.status(503).json({
+        success: false,
+        data: {
+          status: 'DOWN',
+          database: 'disconnected',
+          timestamp: new Date().toISOString(),
+        },
+        message: 'Database connection unavailable',
+      });
     }
+
+    // Ping Database
+    await mongoose.connection.db.admin().ping();
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        status: 'UP',
+        database: 'connected',
+        timestamp: new Date().toISOString(),
+      },
+      message: 'Backend API service and database are healthy',
+    });
+  } catch (error) {
+    return res.status(503).json({
+      success: false,
+      data: {
+        status: 'DOWN',
+        database: 'error',
+        timestamp: new Date().toISOString(),
+      },
+      message: `Database ping failed: ${(error as Error).message}`,
+    });
   }
-
-  const healthy = isDbConnected && dbStatus === 'connected';
-
-  res.status(healthy ? 200 : 503).json({
-    success: healthy,
-    message: healthy ? 'System is running smoothly.' : 'System is experiencing issues.',
-    data: {
-      uptime: Math.floor(process.uptime()),
-      timestamp: new Date().toISOString(),
-      database: dbStatus,
-    },
-    error: healthy ? null : 'Database connection is offline or unhealthy',
-  });
 });
 
-// Auth Module Routes
+// API Routes
 router.use('/auth', authRoutes);
-
-// Profile Module Routes
 router.use('/profile', profileRoutes);
-
-// Job Module Routes
 router.use('/jobs', jobRoutes);
-
-// Application Module Routes
 router.use('/applications', applicationRoutes);
-
-// Dashboard Module Routes
 router.use('/dashboard', dashboardRoutes);
-
-// Notification Module Routes
 router.use('/notifications', notificationRoutes);
-
-// Admin Module Routes
 router.use('/admin', adminRoutes);
+router.use('/docs', swaggerRoutes);
 
 export default router;

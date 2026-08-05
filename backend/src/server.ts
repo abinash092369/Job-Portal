@@ -1,40 +1,40 @@
 import app from './app';
-import { env } from './config/env';
-import { logger } from './utils/logger';
+import mongoose from 'mongoose';
+import { config } from './config';
 import { connectDatabase } from './config/database';
+import { logger } from './config/logger';
 
-async function startServer() {
-  // Print runtime values for diagnosis
-  console.log("Node Version:", process.version);
-  console.log("Platform:", process.platform);
-
-  // 1. Establish Database Connection
+const startServer = async () => {
+  // Connect to MongoDB
   await connectDatabase();
 
-  // 2. Start Listening
-  const server = app.listen(env.PORT, () => {
-    logger.info(`🚀 Server running in [${env.NODE_ENV}] mode on port [${env.PORT}]`);
-    logger.info(`🌐 Configured FRONTEND_URL: [${env.FRONTEND_URL}]`);
-    logger.info(`📧 Active Primary Email Provider: Resend SDK`);
-    logger.info(`📖 Swagger UI API Docs available at http://localhost:${env.PORT}/docs`);
+  const server = app.listen(config.port, () => {
+    logger.info(`Server listening on port ${config.port} in ${config.nodeEnv} mode`);
+    logger.info(`API Docs available at ${config.backendPublicUrl}/docs or ${config.backendPublicUrl}/api/v1/docs`);
   });
 
-  // Graceful error termination procedures
-  process.on('unhandledRejection', (err: Error) => {
-    logger.error(`Unhandled Promise Rejection: ${err.stack || err.message}`);
-    logger.error('Shutting down server...');
-    server.close(() => {
-      process.exit(1);
+  const gracefulShutdown = async (signal: string) => {
+    logger.info(`${signal} signal received. Closing HTTP server...`);
+    server.close(async () => {
+      logger.info('HTTP server closed.');
+      try {
+        await mongoose.connection.close(false);
+        logger.info('MongoDB connection closed cleanly.');
+        process.exit(0);
+      } catch (err) {
+        logger.error(`Error closing MongoDB connection: ${(err as Error).message}`);
+        process.exit(1);
+      }
     });
-  });
+  };
 
-  process.on('uncaughtException', (err: Error) => {
-    logger.error(`Uncaught Exception: ${err.stack || err.message}`);
-    logger.error('Shutting down server...');
-    server.close(() => {
-      process.exit(1);
-    });
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  process.on('unhandledRejection', (reason: Error) => {
+    logger.error(`Unhandled Rejection: ${reason.message}`);
+    server.close(() => process.exit(1));
   });
-}
+};
 
 startServer();

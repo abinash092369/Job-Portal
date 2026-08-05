@@ -14,6 +14,7 @@ import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { ForgotPassword } from './pages/auth/ForgotPassword';
 import { ResetPassword } from './pages/auth/ResetPassword';
+import { VerifyEmail } from './pages/auth/VerifyEmail';
 import { CandidateDashboardPage } from './pages/candidate/CandidateDashboard';
 import { CandidateProfilePage } from './pages/candidate/CandidateProfile';
 import { MyApplications } from './pages/candidate/MyApplications';
@@ -67,6 +68,7 @@ function AppContent() {
           <Route path="/jobs" element={<JobListings />} />
           <Route path="/jobs/:id" element={<JobDetail />} />
           <Route path="/company/:id" element={<CompanyProfile />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
 
           {/* Guest-Only Auth Routes */}
           <Route

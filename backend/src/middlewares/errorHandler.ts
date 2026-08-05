@@ -1,52 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
-import { AppError } from '../utils/errors';
-import { formatResponse } from '../utils/response';
-import { logger } from '../utils/logger';
-import { env } from '../config/env';
+import { logger } from '../config/logger';
 
-export function errorHandler(
+export const errorHandler = (
   err: any,
   req: Request,
   res: Response,
-  next: NextFunction
-): void {
-  // If headers have already been sent, delegate to the default Express handler
-  if (res.headersSent) {
-    return next(err);
+  _next: NextFunction
+): void => {
+  logger.error(`[${req.method}] ${req.url} - Error: ${err.message || err}`);
+
+  if (err.stack) {
+    logger.error(err.stack);
   }
 
-  // Log error with stack trace
-  logger.error(
-    `${err.message || 'Unknown Error'} - ${req.method} ${req.originalUrl} - IP: ${req.ip}\nStack: ${err.stack}`
-  );
+  const statusCode = err.statusCode || err.status || 500;
+  const message = err.message || 'Internal Server Error';
 
-  // Operational, trusted error: send structured response to client
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json(
-      formatResponse(false, null, err.message, err.details)
-    );
-    return;
-  }
-
-  // Handle direct Zod errors (in case validator or code throws ZodError directly)
-  if (err.name === 'ZodError' || (err.errors && err.name === 'ZodError')) {
-    res.status(400).json(
-      formatResponse(false, null, 'Validation Error', err.errors)
-    );
-    return;
-  }
-
-  // Non-operational, system, or unknown error: do not leak details in production
-  const statusCode = err.statusCode || 500;
-  const message = env.NODE_ENV === 'production'
-    ? 'Something went wrong on our end'
-    : err.message || 'Internal Server Error';
-
-  const errorDetails = env.NODE_ENV === 'production'
-    ? null
-    : { stack: err.stack, raw: err };
-
-  res.status(statusCode).json(
-    formatResponse(false, null, message, errorDetails)
-  );
-}
+  res.status(statusCode).json({
+    success: false,
+    data: null,
+    message,
+  });
+};

@@ -1,93 +1,69 @@
-import path from 'path';
 import express from 'express';
-import helmet from 'helmet';
 import cors from 'cors';
+import helmet from 'helmet';
 import compression from 'compression';
-import morgan from 'morgan';
-import { env } from './config/env';
-import { logger } from './utils/logger';
+import cookieParser from 'cookie-parser';
+import path from 'path';
+import { config } from './config';
+import { logger } from './config/logger';
+import { globalLimiter } from './middlewares/rateLimiter';
 import { errorHandler } from './middlewares/errorHandler';
-import { globalRateLimiter } from './middlewares/rateLimiter';
 import routes from './routes';
-import swaggerRouter from './routes/swagger';
 
 const app = express();
 
-// Trust reverse proxy (Railway / Cloudflare / Nginx) for secure cookies & X-Forwarded-Proto
-app.set('trust proxy', 1);
+// Security headers
+app.use(helmet());
 
-// 1. Security Headers (Helmet) - allow cross-origin loading of static uploads (logos, photos, resumes)
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-  })
-);
+logger.info(`Configured CORS Allowed FRONTEND_URL: ${config.frontendUrl}`);
 
-// 2. CORS - Configured production and deployment origins
 const allowedOrigins = [
-  env.FRONTEND_URL.replace(/\/$/, ''),
-];
+  config.frontendUrl,
+  'https://job-portal-abinash.netlify.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+].map((url) => url.replace(/\/+$/, ''));
 
+// CORS configuration supporting cross-domain httpOnly cookies
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (e.g. Postman, curl, mobile apps)
-      if (!origin) return callback(null, true);
-      
-      const cleanOrigin = origin.replace(/\/$/, '');
-      if (
-        allowedOrigins.includes(cleanOrigin) ||
-        cleanOrigin.endsWith('.netlify.app') ||
-        cleanOrigin.includes('localhost') ||
-        cleanOrigin.includes('127.0.0.1') ||
-        env.NODE_ENV === 'development'
-      ) {
-        callback(null, true);
-      } else {
-        logger.error(`CORS Blocked: Origin [${origin}] is not in allowed origins [${allowedOrigins.join(', ')}]`);
-        callback(new Error('Not allowed by CORS settings'));
+    origin: (requestOrigin, callback) => {
+      // Allow requests with no origin (e.g. mobile apps, Postman, server-to-server)
+      if (!requestOrigin) {
+        return callback(null, true);
       }
+
+      const normalizedOrigin = requestOrigin.replace(/\/+$/, '');
+      if (allowedOrigins.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
+
+      logger.warn(`CORS blocked request from origin: ${requestOrigin}`);
+      return callback(new Error(`CORS policy error: Origin '${requestOrigin}' not allowed.`));
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
-// 3. Response Compression
+// Compression & Parsers
 app.use(compression());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
-// 4. Body Parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Rate Limiter
+app.use(globalLimiter);
 
-// 5. Morgan HTTP logger streaming through Winston logger
-const morganMiddleware = morgan(
-  ':remote-addr :method :url :status :res[content-length] B - :response-time ms',
-  {
-    stream: {
-      write: (message) => logger.http(message.trim()),
-    },
-  }
-);
-app.use(morganMiddleware);
+// Serve static uploaded files
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
-// 6. Global Rate Limiter
-app.use(globalRateLimiter);
-
-// 7. Serve Static Uploads
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// 8. API Routes Mapping
+// Mount routes at both /api/v1 and root level for full compatibility
 app.use('/api/v1', routes);
+app.use('/', routes);
 
-// 8. Swagger Documentation UI
-app.use('/docs', swaggerRouter);
-
-// 9. Root Redirect to Docs
-app.get('/', (req, res) => {
-  res.redirect('/docs');
-});
-
-// 10. Centralized Error Handler (must be the final registered middleware)
+// Centralized error handler
 app.use(errorHandler);
 
 export default app;
