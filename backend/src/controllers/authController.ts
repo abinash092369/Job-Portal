@@ -3,7 +3,7 @@ import { AuthService } from '../services/authService';
 import { sendSuccess, sendError } from '../utils/response';
 import { asyncHandler } from '../utils/asyncHandler';
 import { AuthenticatedRequest } from '../types';
-import { getCookieOptions } from '../config';
+import { getCookieOptions, getClearCookieOptions } from '../config';
 
 const authService = new AuthService();
 
@@ -21,7 +21,7 @@ export const logout = asyncHandler(async (req: AuthenticatedRequest, res: Respon
   if (req.user?.id) {
     await authService.logout(req.user.id);
   }
-  const cookieOptions = getCookieOptions();
+  const cookieOptions = getClearCookieOptions();
   res.clearCookie('refreshToken', cookieOptions);
   return sendSuccess(res, null, 'Logout successful.');
 });
