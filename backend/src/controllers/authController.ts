@@ -8,8 +8,8 @@ import { getCookieOptions, getClearCookieOptions } from '../config';
 const authService = new AuthService();
 
 export const firebaseAuth = asyncHandler(async (req: Request, res: Response) => {
-  const { idToken, role, name } = req.body;
-  const { user, accessToken, refreshToken } = await authService.firebaseAuth(idToken, role, name);
+  const { idToken, role, name, email } = req.body;
+  const { user, accessToken, refreshToken } = await authService.firebaseAuth(idToken, role, name, email);
 
   const cookieOptions = getCookieOptions();
   res.cookie('refreshToken', refreshToken, cookieOptions);

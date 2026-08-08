@@ -79,12 +79,13 @@ export const Login: React.FC = () => {
     }
   };
 
-  const authenticateWithBackend = async (idToken: string, displayName?: string) => {
+  const authenticateWithBackend = async (idToken: string, displayName?: string, userEmail?: string) => {
     try {
       const res = await api.post('/auth/firebase', {
         idToken,
         role,
         name: displayName || name.trim() || undefined,
+        email: userEmail || email.trim() || undefined,
       });
       const { user, accessToken } = res.data.data;
       loginUser(user, accessToken);
@@ -108,7 +109,7 @@ export const Login: React.FC = () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
       const idToken = await userCredential.user.getIdToken();
-      await authenticateWithBackend(idToken);
+      await authenticateWithBackend(idToken, userCredential.user.displayName || undefined, email.trim());
     } catch (err: any) {
       const msg = err.message?.replace('Firebase: ', '') || 'Email login failed';
       addToast(msg, 'error');
@@ -136,7 +137,7 @@ export const Login: React.FC = () => {
         await updateProfile(userCredential.user, { displayName: name.trim() });
       }
       const idToken = await userCredential.user.getIdToken();
-      await authenticateWithBackend(idToken, name.trim());
+      await authenticateWithBackend(idToken, name.trim(), email.trim());
     } catch (err: any) {
       const msg = err.message?.replace('Firebase: ', '') || 'Signup failed';
       addToast(msg, 'error');
@@ -151,7 +152,11 @@ export const Login: React.FC = () => {
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
       const idToken = await userCredential.user.getIdToken();
-      await authenticateWithBackend(idToken, userCredential.user.displayName || undefined);
+      await authenticateWithBackend(
+        idToken,
+        userCredential.user.displayName || undefined,
+        userCredential.user.email || undefined
+      );
     } catch (err: any) {
       const msg = err.message?.replace('Firebase: ', '') || 'Google authentication failed';
       addToast(msg, 'error');

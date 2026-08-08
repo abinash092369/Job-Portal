@@ -35,8 +35,13 @@ export class AuthService {
     };
   }
 
-  async firebaseAuth(idToken: string, requestedRole?: UserRole, requestedName?: string) {
-    const decodedToken = await verifyFirebaseToken(idToken);
+  async firebaseAuth(
+    idToken: string,
+    requestedRole?: UserRole,
+    requestedName?: string,
+    requestedEmail?: string
+  ) {
+    const decodedToken = await verifyFirebaseToken(idToken, requestedEmail);
     const { uid, email, phoneNumber, displayName, photoURL, provider: rawProvider } = decodedToken;
 
     // Determine clean AuthProvider enum

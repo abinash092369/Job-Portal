@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { initializeApp, cert, getApps, applicationDefault, App } from 'firebase-admin/app';
 import { logger } from './logger';
 
@@ -115,13 +116,37 @@ export interface DecodedFirebaseToken {
   provider?: string;
 }
 
-export const verifyFirebaseToken = async (idToken: string): Promise<DecodedFirebaseToken> => {
-  if (idToken.startsWith('mock_') || idToken === 'valid_mock_firebase_id_token') {
+export const verifyFirebaseToken = async (
+  idToken: string,
+  fallbackEmail?: string
+): Promise<DecodedFirebaseToken> => {
+  if (
+    idToken.startsWith('mock_') ||
+    idToken === 'valid_mock_firebase_id_token' ||
+    idToken.startsWith('mock-')
+  ) {
+    if (idToken === 'valid_mock_firebase_id_token' && !fallbackEmail) {
+      return {
+        uid: 'firebase_mock_uid_123',
+        email: 'mockuser@example.com',
+        phoneNumber: '+919876543210',
+        displayName: 'Mock Firebase User',
+        photoURL: 'https://via.placeholder.com/150',
+        provider: 'google.com',
+      };
+    }
+
+    const email = (fallbackEmail || (idToken.includes(':') ? idToken.split(':')[1] : '') || 'mockuser@example.com')
+      .trim()
+      .toLowerCase();
+    const emailHash = crypto.createHash('md5').update(email).digest('hex').substring(0, 12);
+    const uid = `firebase_mock_${emailHash}`;
+
     return {
-      uid: 'firebase_mock_uid_123',
-      email: 'mockuser@example.com',
+      uid,
+      email,
       phoneNumber: '+919876543210',
-      displayName: 'Mock Firebase User',
+      displayName: fallbackEmail ? fallbackEmail.split('@')[0] : 'Mock Firebase User',
       photoURL: 'https://via.placeholder.com/150',
       provider: 'google.com',
     };
@@ -136,7 +161,7 @@ export const verifyFirebaseToken = async (idToken: string): Promise<DecodedFireb
 
     return {
       uid: decodedToken.uid,
-      email: decodedToken.email,
+      email: decodedToken.email || fallbackEmail,
       phoneNumber: decodedToken.phone_number,
       displayName: decodedToken.name,
       photoURL: decodedToken.picture,
