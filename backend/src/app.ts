@@ -15,8 +15,12 @@ const app = express();
 // Enable trust proxy for Railway / reverse proxy setup (MUST be set before rate limiting or other middleware)
 app.set('trust proxy', 1);
 
-// Security headers
-app.use(helmet());
+// Security headers (Allow popups for Firebase OAuth flow)
+app.use(
+  helmet({
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  })
+);
 
 logger.info(`Configured CORS Allowed FRONTEND_URL: ${config.frontendUrl}`);
 
@@ -65,6 +69,15 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 // Mount routes at both /api/v1 and root level for full compatibility
 app.use('/api/v1', routes);
 app.use('/', routes);
+
+// 404 handler for unmapped routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    data: null,
+    message: `Route [${req.method}] ${req.originalUrl} not found`,
+  });
+});
 
 // Centralized error handler
 app.use(errorHandler);

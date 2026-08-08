@@ -2,10 +2,11 @@ import rateLimit from 'express-rate-limit';
 
 export const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // limit each IP to 200 requests per windowMs
+  max: 1000, // limit each IP to 1000 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
   validate: { trustProxy: false, xForwardedForHeader: false },
+  skip: (req) => req.method === 'OPTIONS', // Skip CORS preflight checks
   message: {
     success: false,
     data: null,
@@ -15,10 +16,11 @@ export const globalLimiter = rateLimit({
 
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // strict limit: 5 login attempts per 15 minutes per IP
+  max: 20, // 20 login attempts per 15 minutes per IP
   standardHeaders: true,
   legacyHeaders: false,
   validate: { trustProxy: false, xForwardedForHeader: false },
+  skip: (req) => req.method === 'OPTIONS',
   message: {
     success: false,
     data: null,
