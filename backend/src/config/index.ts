@@ -10,7 +10,7 @@ const nodeEnv = process.env.NODE_ENV || 'development';
 // Startup assertion check: throw loud error if running in production with localhost FRONTEND_URL
 if (nodeEnv === 'production' && normalizedFrontendUrl.includes('localhost')) {
   throw new Error(
-    '[CRITICAL CONFIG ERROR] NODE_ENV is set to "production" but FRONTEND_URL is set to a localhost URL. You must set FRONTEND_URL to your deployed frontend domain (e.g. https://job-portal-abinash.netlify.app) on Railway.'
+    '[CRITICAL CONFIG ERROR] NODE_ENV is set to "production" but FRONTEND_URL is set to a localhost URL. You must set FRONTEND_URL to your deployed frontend domain (e.g. https://job-portal-abinash.netlify.app) on Render.'
   );
 }
 
@@ -42,7 +42,7 @@ export const getCookieOptions = () => {
   return {
     httpOnly: true,
     secure: isProduction, // MUST be true in production for cross-site cookies
-    sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax', // MUST be 'none' in production for Netlify -> Railway cross-domain requests
+    sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax', // MUST be 'none' in production for Netlify -> Render cross-domain requests
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };
 };
